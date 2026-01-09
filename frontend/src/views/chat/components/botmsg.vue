@@ -129,11 +129,16 @@ const markdownTokens = computed(() => {
         return [];
     }
     
-    // 首先对 Markdown 内容进行安全处理
-    const safeMarkdown = safeMarkdownToHTML(text);
-    
-    // 使用 marked.lexer 分词
-    return marked.lexer(safeMarkdown);
+    try {
+        // 首先对 Markdown 内容进行安全处理
+        const safeMarkdown = safeMarkdownToHTML(text);
+        
+        // 使用 marked.lexer 分词
+        return marked.lexer(safeMarkdown);
+    } catch (e) {
+        console.error('Markdown lexer error:', e);
+        return [];
+    }
 });
 
 // 渲染单个 token 为 HTML
@@ -158,7 +163,12 @@ const renderToken = (token) => {
 };
 
 const myMarkdown = (res) => {
-    return marked.parse(res, { renderer })
+    try {
+        return marked.parse(res, { renderer })
+    } catch (e) {
+        console.error('Markdown parse error:', e)
+        return res
+    }
 }
 
 // 获取实际内容

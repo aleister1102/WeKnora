@@ -12,7 +12,16 @@ import MentionSelector from './MentionSelector.vue';
 import AgentSelector from './AgentSelector.vue';
 import { getCaretCoordinates } from '@/utils/caret';
 import { listModels, type ModelConfig } from '@/api/model';
-import { listAgents, type CustomAgent, BUILTIN_QUICK_ANSWER_ID, BUILTIN_SMART_REASONING_ID } from '@/api/agent';
+import { 
+  listAgents, 
+  type CustomAgent, 
+  BUILTIN_QUICK_ANSWER_ID, 
+  BUILTIN_SMART_REASONING_ID,
+  BUILTIN_DEEP_RESEARCHER_ID,
+  BUILTIN_DATA_ANALYST_ID,
+  BUILTIN_KNOWLEDGE_GRAPH_EXPERT_ID,
+  BUILTIN_DOCUMENT_ASSISTANT_ID
+} from '@/api/agent';
 import { getTenantWebSearchConfig } from '@/api/web-search';
 import { getConversationConfig, updateConversationConfig, type ConversationConfig } from '@/api/system';
 import { useI18n } from 'vue-i18n';
@@ -21,7 +30,33 @@ const route = useRoute();
 const router = useRouter();
 const settingsStore = useSettingsStore();
 const uiStore = useUIStore();
-const { t } = useI18n();
+const { t, te } = useI18n();
+
+// Built-in agent ID to i18n key mapping (shared with AgentList/AgentSelector)
+const BUILTIN_AGENT_I18N_MAP: Record<string, string> = {
+  [BUILTIN_QUICK_ANSWER_ID]: 'quickAnswer',
+  [BUILTIN_SMART_REASONING_ID]: 'smartReasoning',
+  [BUILTIN_DEEP_RESEARCHER_ID]: 'deepResearcher',
+  [BUILTIN_DATA_ANALYST_ID]: 'dataAnalyst',
+  [BUILTIN_KNOWLEDGE_GRAPH_EXPERT_ID]: 'knowledgeGraphExpert',
+  [BUILTIN_DOCUMENT_ASSISTANT_ID]: 'documentAssistant'
+}
+
+const getDisplayAgentName = (agent: CustomAgent) => {
+  if (agent.is_builtin && BUILTIN_AGENT_I18N_MAP[agent.id]) {
+    const key = `agent.builtinInfo.${BUILTIN_AGENT_I18N_MAP[agent.id]}.name`
+    return te(key) ? t(key) : agent.name
+  }
+  return agent.name
+}
+
+const getDisplayAgentDescription = (agent: CustomAgent) => {
+  if (agent.is_builtin && BUILTIN_AGENT_I18N_MAP[agent.id]) {
+    const key = `agent.builtinInfo.${BUILTIN_AGENT_I18N_MAP[agent.id]}.description`
+    return te(key) ? t(key) : (agent.description || '')
+  }
+  return agent.description || ''
+}
 
 let query = ref("");
 const showKbSelector = ref(false);
@@ -252,10 +287,11 @@ const inputPlaceholder = computed(() => {
   // 如果选择了自定义智能体
   if (isCustomAgent.value && selectedAgent.value) {
     // 有描述时显示描述，否则显示"向 [名称] 提问"
-    if (selectedAgent.value.description) {
-      return selectedAgent.value.description;
+    const description = getDisplayAgentDescription(selectedAgent.value);
+    if (description) {
+      return description;
     }
-    return t('input.placeholderAgent', { name: selectedAgent.value.name });
+    return t('input.placeholderAgent', { name: getDisplayAgentName(selectedAgent.value) });
   }
   
   const hasKnowledge = allSelectedItems.value.length > 0;
@@ -1233,7 +1269,7 @@ const handleSelectAgent = (agent: CustomAgent) => {
   
   const message = agent.is_builtin 
     ? (isAgentType ? t('input.messages.agentSwitchedOn') : t('input.messages.agentSwitchedOff'))
-    : t('input.messages.agentSelected', { name: agent.name });
+    : t('input.messages.agentSelected', { name: getDisplayAgentName(agent) });
   MessagePlugin.success(message);
 }
 
@@ -1358,9 +1394,10 @@ const getCustomAgentNotReadyReasons = (agent: CustomAgent): string[] => {
 // 显示智能体未就绪的消息（统一处理内置和自定义智能体）
 const showAgentNotReadyMessage = (agent: CustomAgent, reasons: string[]) => {
   const reasonsText = reasons.join('、')
+  const agentName = getDisplayAgentName(agent)
   
   const messageContent = h('div', { style: 'display: flex; flex-direction: column; gap: 8px; max-width: 320px;' }, [
-    h('span', { style: 'color: #333; line-height: 1.5;' }, t('input.agentNotReadyDetail', { agentName: agent.name, reasons: reasonsText })),
+    h('span', { style: 'color: #333; line-height: 1.5;' }, t('input.agentNotReadyDetail', { agentName, reasons: reasonsText })),
     h('a', {
       href: '#',
       onClick: (e: Event) => {
@@ -1534,7 +1571,7 @@ onBeforeRouteUpdate((to, from, next) => {
           @click.stop="toggleAgentModeSelector"
         >
           <span class="agent-mode-text">
-            {{ selectedAgent.name || (isAgentEnabled ? $t('input.agentMode') : $t('input.normalMode')) }}
+            {{ getDisplayAgentName(selectedAgent) || (isAgentEnabled ? $t('input.agentMode') : $t('input.normalMode')) }}
           </span>
           <svg 
             width="12" 
@@ -1855,7 +1892,7 @@ const getImgSrc = (url: string) => {
   font-size: 16px;
   font-weight: 400;
   line-height: 24px;
-  font-family: var(--td-font-family, "PingFang SC");
+  font-family: var(--td-font-family);
   padding: 12px 16px 56px 16px;
   border-radius: 0 0 12px 12px;
   border: none;
@@ -1870,7 +1907,7 @@ const getImgSrc = (url: string) => {
 
   &::placeholder {
     color: var(--td-text-color-placeholder, #00000066);
-    font-family: var(--td-font-family, "PingFang SC");
+    font-family: var(--td-font-family);
     font-size: 16px;
     font-weight: 400;
     line-height: 24px;

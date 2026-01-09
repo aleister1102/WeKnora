@@ -40,8 +40,8 @@
               <t-icon :name="agent.config?.agent_mode === 'smart-reasoning' ? 'control-platform' : 'chat'" size="18px" />
             </div>
             <!-- 自定义智能体使用 AgentAvatar -->
-            <AgentAvatar v-else :name="agent.name" size="medium" />
-            <span class="card-title" :title="agent.name">{{ agent.name }}</span>
+            <AgentAvatar v-else :name="getDisplayName(agent)" size="medium" />
+            <span class="card-title" :title="getDisplayName(agent)">{{ getDisplayName(agent) }}</span>
           </div>
           <t-popup 
             v-model="agent.showMore" 
@@ -79,8 +79,8 @@
 
         <!-- 卡片内容 -->
         <div class="card-content">
-          <div class="card-description">
-            {{ agent.description || $t('agent.noDescription') }}
+          <div class="card-description" :title="getDisplayDescription(agent)">
+            {{ getDisplayDescription(agent) }}
           </div>
         </div>
 
@@ -150,7 +150,7 @@
           <span class="circle-title">{{ $t('agent.delete.confirmTitle') }}</span>
         </div>
         <span class="del-circle-txt">
-          {{ $t('agent.delete.confirmMessage', { name: deletingAgent?.name ?? '' }) }}
+          {{ $t('agent.delete.confirmMessage', { name: deletingAgent ? getDisplayName(deletingAgent) : '' }) }}
         </span>
         <div class="circle-btn">
           <span class="circle-btn-txt" @click="deleteVisible = false">{{ $t('common.cancel') }}</span>
@@ -175,15 +175,52 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MessagePlugin, Icon as TIcon } from 'tdesign-vue-next'
-import { listAgents, deleteAgent, copyAgent, type CustomAgent } from '@/api/agent'
+import { 
+  listAgents, 
+  deleteAgent, 
+  copyAgent, 
+  type CustomAgent,
+  BUILTIN_QUICK_ANSWER_ID,
+  BUILTIN_SMART_REASONING_ID,
+  BUILTIN_DEEP_RESEARCHER_ID,
+  BUILTIN_DATA_ANALYST_ID,
+  BUILTIN_KNOWLEDGE_GRAPH_EXPERT_ID,
+  BUILTIN_DOCUMENT_ASSISTANT_ID
+} from '@/api/agent'
 import { formatStringDate } from '@/utils/index'
 import { useI18n } from 'vue-i18n'
 import AgentEditorModal from './AgentEditorModal.vue'
 import AgentAvatar from '@/components/AgentAvatar.vue'
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const route = useRoute()
 const router = useRouter()
+
+// Built-in agent ID to i18n key mapping
+const BUILTIN_AGENT_I18N_MAP: Record<string, string> = {
+  [BUILTIN_QUICK_ANSWER_ID]: 'quickAnswer',
+  [BUILTIN_SMART_REASONING_ID]: 'smartReasoning',
+  [BUILTIN_DEEP_RESEARCHER_ID]: 'deepResearcher',
+  [BUILTIN_DATA_ANALYST_ID]: 'dataAnalyst',
+  [BUILTIN_KNOWLEDGE_GRAPH_EXPERT_ID]: 'knowledgeGraphExpert',
+  [BUILTIN_DOCUMENT_ASSISTANT_ID]: 'documentAssistant'
+}
+
+const getDisplayName = (agent: CustomAgent) => {
+  if (agent.is_builtin && BUILTIN_AGENT_I18N_MAP[agent.id]) {
+    const key = `agent.builtinInfo.${BUILTIN_AGENT_I18N_MAP[agent.id]}.name`
+    return te(key) ? t(key) : agent.name
+  }
+  return agent.name
+}
+
+const getDisplayDescription = (agent: CustomAgent) => {
+  if (agent.is_builtin && BUILTIN_AGENT_I18N_MAP[agent.id]) {
+    const key = `agent.builtinInfo.${BUILTIN_AGENT_I18N_MAP[agent.id]}.description`
+    return te(key) ? t(key) : (agent.description || t('agent.noDescription'))
+  }
+  return agent.description || t('agent.noDescription')
+}
 
 interface AgentWithUI extends CustomAgent {
   showMore?: boolean
@@ -262,10 +299,17 @@ const handleCardClick = (agent: AgentWithUI) => {
 }
 
 const handleEdit = (agent: AgentWithUI) => {
-  agent.showMore = false
-  editingAgent.value = agent
-  editorMode.value = 'edit'
-  editorVisible.value = true
+  try {
+    agent.showMore = false
+    editingAgent.value = agent
+    editorMode.value = 'edit'
+    editorVisible.value = true
+  } catch (e) {
+    console.error('Error opening agent editor:', e)
+    // Still try to open the modal even if there's an error
+    editorMode.value = 'edit'
+    editorVisible.value = true
+  }
 }
 
 const handleDelete = (agent: AgentWithUI) => {
@@ -353,7 +397,7 @@ defineExpose({
   h2 {
     margin: 0;
     color: #000000e6;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 24px;
     font-weight: 600;
     line-height: 32px;
@@ -363,7 +407,7 @@ defineExpose({
 .header-subtitle {
   margin: 0;
   color: #00000099;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   font-weight: 400;
   line-height: 20px;
@@ -394,7 +438,7 @@ defineExpose({
   padding: 16px 18px;
   display: flex;
   flex-direction: column;
-  height: 160px;
+  height: 172px;
 
   &:hover {
     border-color: #07c05f;
@@ -487,7 +531,7 @@ defineExpose({
 
 .card-title {
   color: #1a1a1a;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 15px;
   font-weight: 600;
   line-height: 22px;
@@ -506,7 +550,7 @@ defineExpose({
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.04);
   color: #666;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 11px;
   font-weight: 500;
   flex-shrink: 0;
@@ -592,13 +636,15 @@ defineExpose({
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  line-clamp: 2;
   overflow: hidden;
+  text-overflow: ellipsis;
   color: #666;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 13px;
   font-weight: 400;
   line-height: 20px;
+  max-height: 40px;
+  word-break: break-word;
 }
 
 .card-bottom {
@@ -689,7 +735,7 @@ defineExpose({
 
 .card-time {
   color: #999;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 12px;
   font-weight: 400;
 }
@@ -710,7 +756,7 @@ defineExpose({
 
   .empty-txt {
     color: #00000099;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 16px;
     font-weight: 600;
     line-height: 26px;
@@ -719,7 +765,7 @@ defineExpose({
 
   .empty-desc {
     color: #00000066;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 14px;
     font-weight: 400;
     line-height: 22px;
@@ -782,7 +828,7 @@ defineExpose({
 
   .circle-title {
     color: #000000e6;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 16px;
     font-weight: 600;
     line-height: 24px;
@@ -790,7 +836,7 @@ defineExpose({
 
   .del-circle-txt {
     color: #00000099;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 14px;
     font-weight: 400;
     line-height: 22px;
@@ -808,7 +854,7 @@ defineExpose({
 
   .circle-btn-txt {
     color: #000000e6;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 14px;
     font-weight: 400;
     line-height: 22px;
@@ -858,7 +904,7 @@ defineExpose({
   cursor: pointer;
   transition: all 0.2s ease;
   color: #000000e6;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   font-weight: 400;
   line-height: 20px;

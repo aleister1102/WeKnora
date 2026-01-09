@@ -143,7 +143,7 @@ const safeProcessThinkContent = (content) => {
     .content {
         line-height: 23px;
         font-size: 14px;
-        font-family: "PingFang SC";
+        font-family: var(--td-font-family, "PingFang SC");
         color: #00000099;
         margin: 6px 8px 4px;
         word-break: break-all;

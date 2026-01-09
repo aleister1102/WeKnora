@@ -72,14 +72,14 @@
                 }"
               />
               <span class="progress-title">
-                {{ importState.taskStatus.status === 'running' ? '导入中...' : 
-                   importState.taskStatus.status === 'success' ? '导入完成' : 
-                   importState.taskStatus.status === 'failed' ? '导入失败' : '等待中...' }}
+                {{ importState.taskStatus.status === 'running' ? $t('knowledgeEditor.faq.importing') : 
+                   importState.taskStatus.status === 'success' ? $t('knowledgeEditor.faq.importComplete') : 
+                   importState.taskStatus.status === 'failed' ? $t('knowledgeEditor.faq.importFailed') : $t('knowledgeEditor.faq.waiting') }}
               </span>
             </div>
             <div class="progress-right">
               <span class="progress-count">
-                {{ importState.taskStatus.processed }}/{{ importState.taskStatus.total }} 条
+                {{ importState.taskStatus.processed }}/{{ importState.taskStatus.total }} {{ $t('knowledgeEditor.faq.items') }}
               </span>
               <t-button
                 v-if="importState.taskStatus.status === 'success' || importState.taskStatus.status === 'failed'"
@@ -714,8 +714,8 @@
 
             <div class="setting-row vertical">
               <div class="setting-info">
-                <label>{{ $t('knowledgeBase.category') || '分类' }}</label>
-                <p class="desc">{{ $t('knowledgeEditor.faq.tagDesc') || '为 FAQ 条目选择分类' }}</p>
+                <label>{{ $t('knowledgeBase.category') }}</label>
+                <p class="desc">{{ $t('knowledgeEditor.faq.tagDesc') }}</p>
               </div>
               <div class="setting-control">
                 <t-select
@@ -723,7 +723,7 @@
                   class="full-width-input"
                   :options="tagSelectOptions"
                   clearable
-                  :placeholder="$t('knowledgeEditor.faq.tagPlaceholder') || '选择分类'"
+                  :placeholder="$t('knowledgeEditor.faq.tagPlaceholder')"
                 />
               </div>
             </div>
@@ -863,7 +863,7 @@
                   :disabled="importState.taskStatus?.status === 'running'"
                 >
                   {{ importState.taskStatus?.status === 'success' ? $t('common.close') : 
-                     importState.taskStatus?.status === 'failed' ? '重试' :
+                     importState.taskStatus?.status === 'failed' ? $t('knowledgeEditor.faq.retry') :
                      $t('knowledgeEditor.faqImport.importButton') }}
                 </t-button>
               </div>
@@ -1224,11 +1224,11 @@ const tagMap = computed<Record<string, any>>(() => {
 // Filter out the __untagged__ pseudo-tag for tag select options (when assigning tags)
 const regularTags = computed(() => tagList.value.filter((tag) => tag.id !== UNTAGGED_FILTER))
 const tagDropdownOptions = computed(() => [
-  { content: t('knowledgeBase.untagged') || '未分类', value: '' },
+  { content: t('knowledgeBase.untagged'), value: '' },
   ...regularTags.value.map((tag: any) => ({ content: tag.name, value: tag.id })),
 ])
 const tagSelectOptions = computed(() => [
-  { label: t('knowledgeBase.untagged') || '未分类', value: '' },
+  { label: t('knowledgeBase.untagged'), value: '' },
   ...regularTags.value.map((tag: any) => ({ label: tag.name, value: tag.id })),
 ])
 const sidebarCategoryCount = computed(() => tagList.value.length)
@@ -1396,8 +1396,8 @@ const loadTags = async (reset = false) => {
 }
 
 const getTagName = (tagId?: string) => {
-  if (!tagId) return t('knowledgeBase.untagged') || '未分类'
-  return tagMap.value[tagId]?.name || (t('knowledgeBase.untagged') || '未分类')
+  if (!tagId) return t('knowledgeBase.untagged')
+  return tagMap.value[tagId]?.name || t('knowledgeBase.untagged')
 }
 
 const handleTagFilterChange = (value: string) => {
@@ -1605,7 +1605,7 @@ const handleFaqMenuAction = (event: Event) => {
   } else if (detail.action === 'batch') {
     // 批量操作通过左侧菜单的下拉菜单处理
     if (selectedRowKeys.value.length === 0) {
-      MessagePlugin.warning(t('knowledgeEditor.faq.selectEntriesFirst') || '请先选中要操作的FAQ条目')
+      MessagePlugin.warning(t('knowledgeEditor.faq.selectEntriesFirst'))
     }
   } else if (detail.action === 'batchTag') {
     if (selectedRowKeys.value.length > 0) {
@@ -2010,7 +2010,7 @@ const handleMenuDelete = async (entry: FAQEntry) => {
 const openImportDialog = () => {
   // 如果正在导入，不允许打开导入对话框
   if (importState.taskStatus?.status === 'running') {
-    MessagePlugin.warning('导入正在进行中，请等待完成后再试')
+    MessagePlugin.warning(t('knowledgeEditor.faq.importInProgress'))
     return
   }
   stopPolling()
@@ -2115,7 +2115,7 @@ const parseCSVFile = async (file: File): Promise<FAQEntryPayload[]> => {
         }
       },
       error: (error: Error) => {
-        reject(new Error(`CSV解析失败: ${error.message}`))
+        reject(new Error(t('knowledgeEditor.faq.csvParseFailed', { error: error.message })))
       },
     })
   })
@@ -3384,7 +3384,7 @@ watch(() => entries.value.map(e => ({
   cursor: pointer;
   transition: all 0.2s ease;
   color: #000000e6;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   font-weight: 400;
 
@@ -3618,7 +3618,7 @@ watch(() => entries.value.map(e => ({
   h2 {
     margin: 0;
     color: #1d2129;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 24px;
     font-weight: 600;
     line-height: 32px;
@@ -3627,7 +3627,7 @@ watch(() => entries.value.map(e => ({
   .faq-subtitle {
     margin: 0;
     color: #00000099;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 14px;
     font-weight: 400;
     line-height: 20px;
@@ -3805,7 +3805,7 @@ watch(() => entries.value.map(e => ({
   border: 1px solid #EEF2F7;
   font-size: 12px;
   color: #4B5563;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
 
   .status-icon {
     font-size: 14px;
@@ -3874,7 +3874,7 @@ watch(() => entries.value.map(e => ({
     background: #3032360f;
     font-size: 12px;
     font-weight: 400;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     transition: all 0.2s ease;
 
     &:hover {
@@ -3939,7 +3939,7 @@ watch(() => entries.value.map(e => ({
   cursor: pointer;
   transition: all 0.2s ease;
   color: #000000e6;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   font-weight: 400;
 
@@ -3971,7 +3971,7 @@ watch(() => entries.value.map(e => ({
 .faq-question {
   flex: 1;
   color: #111827;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 15px;
   font-weight: 600;
   line-height: 1.5;
@@ -4003,7 +4003,7 @@ watch(() => entries.value.map(e => ({
 
   .faq-section-label {
     color: #6B7280;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
@@ -4094,7 +4094,7 @@ watch(() => entries.value.map(e => ({
   max-width: 100%;
   min-width: 0;
   border-radius: 6px;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   flex: 0 1 auto;
   
   :deep(.t-tag) {
@@ -4143,7 +4143,7 @@ watch(() => entries.value.map(e => ({
   font-size: 12px;
   font-style: italic;
   padding: 8px 0;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
 }
 
 
@@ -4155,7 +4155,7 @@ watch(() => entries.value.map(e => ({
   padding: 24px 16px;
   color: #6B7280;
   font-size: 13px;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
 }
 
 .faq-no-more {
@@ -4187,7 +4187,7 @@ watch(() => entries.value.map(e => ({
 
   .empty-text {
     color: #111827;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 18px;
     font-weight: 600;
     line-height: 28px;
@@ -4195,7 +4195,7 @@ watch(() => entries.value.map(e => ({
 
   .empty-desc {
     color: #6B7280;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 14px;
     font-weight: 400;
     line-height: 22px;
@@ -4265,7 +4265,7 @@ watch(() => entries.value.map(e => ({
 
   .import-title {
     margin: 0;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 18px;
     font-weight: 600;
     color: #000000e6;
@@ -4333,7 +4333,7 @@ watch(() => entries.value.map(e => ({
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 13px;
   font-weight: 500;
   padding: 6px 14px;
@@ -4364,7 +4364,7 @@ watch(() => entries.value.map(e => ({
 .import-form-label {
   display: block;
   margin-bottom: 0;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   font-weight: 500;
   color: #333333;
@@ -4388,7 +4388,7 @@ watch(() => entries.value.map(e => ({
   }
   
   .t-radio-button {
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 14px;
     border-color: #d9d9d9;
     transition: all 0.2s ease;
@@ -4479,20 +4479,20 @@ watch(() => entries.value.map(e => ({
 }
 
 .upload-primary-text {
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   font-weight: 500;
   color: #333333;
 }
 
 .upload-secondary-text {
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 12px;
   color: #666666;
 }
 
 .upload-file-name {
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   font-weight: 500;
   color: #07C05F;
@@ -4502,7 +4502,7 @@ watch(() => entries.value.map(e => ({
 // 导入表单提示
 .import-form-tip {
   margin-top: 8px;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 12px;
   color: #00000066;
   line-height: 18px;
@@ -4532,7 +4532,7 @@ watch(() => entries.value.map(e => ({
 }
 
 .preview-title {
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   font-weight: 500;
   color: #333333;
@@ -4571,14 +4571,14 @@ watch(() => entries.value.map(e => ({
   background: linear-gradient(135deg, #07C05F 0%, #05a04f 100%);
   color: #ffffff;
   border-radius: 4px;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 12px;
   font-weight: 600;
 }
 
 .preview-question {
   flex: 1;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 13px;
   color: #333333;
   line-height: 1.5;
@@ -4589,7 +4589,7 @@ watch(() => entries.value.map(e => ({
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid #e5e7eb;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 12px;
   color: #666666;
   text-align: center;
@@ -4621,7 +4621,7 @@ watch(() => entries.value.map(e => ({
   .t-drawer__header {
     padding: 20px 24px;
     border-bottom: 1px solid #e5e5e5;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 18px;
     font-weight: 600;
     color: #000000e6;
@@ -4702,7 +4702,7 @@ watch(() => entries.value.map(e => ({
     height: 32px;
     min-width: 32px;
     padding: 0;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     transition: all 0.2s ease;
     border-radius: 8px;
   }
@@ -4753,7 +4753,7 @@ watch(() => entries.value.map(e => ({
 .item-count {
   font-size: 13px;
   color: #6B7280;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-weight: 500;
   text-align: right;
   padding-right: 40px;
@@ -4809,7 +4809,7 @@ watch(() => entries.value.map(e => ({
     font-size: 14px;
     line-height: 1.6;
     color: #111827;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     white-space: pre-wrap;
     word-break: break-word;
     padding: 0;
@@ -4855,7 +4855,7 @@ watch(() => entries.value.map(e => ({
   margin-top: 6px;
   font-size: 12px;
   color: #00000066;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
 }
 
 // FAQ编辑器表单样式 - 完全参考设置页面
@@ -5080,7 +5080,7 @@ watch(() => entries.value.map(e => ({
 
 // Input 组件样式 - 与登录页面一致
 :deep(.t-input) {
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   border: 1px solid #E7E7E7;
   border-radius: 8px;
@@ -5102,7 +5102,7 @@ watch(() => entries.value.map(e => ({
     outline: none !important;
     background: transparent;
     font-size: 14px;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     padding: 6px 12px;
     color: #111827;
 
@@ -5125,7 +5125,7 @@ watch(() => entries.value.map(e => ({
 
 // Textarea 组件样式
 :deep(.t-textarea) {
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   border: 1px solid #E7E7E7;
   border-radius: 8px;
@@ -5147,7 +5147,7 @@ watch(() => entries.value.map(e => ({
     outline: none !important;
     background: transparent;
     font-size: 14px;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     line-height: 1.6;
     resize: vertical;
     padding: 6px 12px;
@@ -5226,7 +5226,7 @@ watch(() => entries.value.map(e => ({
   .t-drawer__header {
     padding: 20px 24px;
     border-bottom: 1px solid #e5e5e5;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 18px;
     font-weight: 600;
     color: #000000e6;
@@ -5365,7 +5365,7 @@ watch(() => entries.value.map(e => ({
   flex-shrink: 0;
   min-width: 50px;
   text-align: right;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   font-weight: 500;
   color: #111827;
@@ -5377,7 +5377,7 @@ watch(() => entries.value.map(e => ({
 .search-button {
   height: 36px;
   border-radius: 8px;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s ease;
@@ -5409,7 +5409,7 @@ watch(() => entries.value.map(e => ({
   margin-left: 0;
   margin-right: 0;
   padding-left: 0;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   font-weight: 600;
   color: #111827;
@@ -5427,7 +5427,7 @@ watch(() => entries.value.map(e => ({
   justify-content: center;
   padding: 48px 16px;
   color: #6B7280;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   text-align: center;
   background: #F9FAFB;
@@ -5498,7 +5498,7 @@ watch(() => entries.value.map(e => ({
 .result-question {
   flex: 1;
   min-width: 0;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   font-weight: 600;
   color: #111827;
@@ -5540,7 +5540,7 @@ watch(() => entries.value.map(e => ({
   font-size: 12px;
   padding: 4px 8px;
   border-radius: 6px;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
 }
 
 .result-body {
@@ -5723,7 +5723,7 @@ watch(() => entries.value.map(e => ({
 }
 
 .section-label {
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 12px;
   font-weight: 600;
   color: #6B7280;

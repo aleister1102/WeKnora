@@ -21,7 +21,7 @@ const { t } = useI18n()
 
 .empty-txt {
     color: #00000099;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 16px;
     font-weight: 600;
     line-height: 26px;
@@ -31,7 +31,7 @@ const { t } = useI18n()
 .empty-type-txt {
     color: #00000066;
     text-align: center;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 12px;
     font-weight: 400;
     width: 217px;

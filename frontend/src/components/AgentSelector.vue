@@ -165,10 +165,19 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Icon as TIcon, Popup as TPopup } from 'tdesign-vue-next';
-import { listAgents, type CustomAgent, BUILTIN_QUICK_ANSWER_ID, BUILTIN_SMART_REASONING_ID } from '@/api/agent';
+import { 
+  listAgents, 
+  type CustomAgent, 
+  BUILTIN_QUICK_ANSWER_ID, 
+  BUILTIN_SMART_REASONING_ID,
+  BUILTIN_DEEP_RESEARCHER_ID,
+  BUILTIN_DATA_ANALYST_ID,
+  BUILTIN_KNOWLEDGE_GRAPH_EXPERT_ID,
+  BUILTIN_DOCUMENT_ASSISTANT_ID
+} from '@/api/agent';
 import AgentAvatar from '@/components/AgentAvatar.vue';
 
-const { t } = useI18n();
+const { t, te } = useI18n();
 
 const props = defineProps<{
   visible: boolean;
@@ -184,6 +193,16 @@ const emit = defineEmits<{
 const agents = ref<CustomAgent[]>([]);
 const dropdownStyle = ref<Record<string, string>>({});
 
+// Built-in agent ID to i18n key mapping (shared with AgentList)
+const BUILTIN_AGENT_I18N_MAP: Record<string, string> = {
+  [BUILTIN_QUICK_ANSWER_ID]: 'quickAnswer',
+  [BUILTIN_SMART_REASONING_ID]: 'smartReasoning',
+  [BUILTIN_DEEP_RESEARCHER_ID]: 'deepResearcher',
+  [BUILTIN_DATA_ANALYST_ID]: 'dataAnalyst',
+  [BUILTIN_KNOWLEDGE_GRAPH_EXPERT_ID]: 'knowledgeGraphExpert',
+  [BUILTIN_DOCUMENT_ASSISTANT_ID]: 'documentAssistant'
+}
+
 // 内置智能体（从 API 获取，对特定 ID 使用本地化名称）
 const builtinAgents = computed(() => {
   // 从 API 获取的内置智能体
@@ -191,17 +210,14 @@ const builtinAgents = computed(() => {
   
   // 对特定内置智能体使用本地化名称和描述
   return apiBuiltins.map(agent => {
-    if (agent.id === BUILTIN_QUICK_ANSWER_ID) {
+    const i18nKey = BUILTIN_AGENT_I18N_MAP[agent.id];
+    if (i18nKey) {
+      const nameKey = `agent.builtinInfo.${i18nKey}.name`;
+      const descKey = `agent.builtinInfo.${i18nKey}.description`;
       return {
         ...agent,
-        name: t('input.normalMode'),
-        description: t('input.normalModeDesc'),
-      };
-    } else if (agent.id === BUILTIN_SMART_REASONING_ID) {
-      return {
-        ...agent,
-        name: t('input.agentMode'),
-        description: t('input.agentModeDesc'),
+        name: te(nameKey) ? t(nameKey) : agent.name,
+        description: te(descKey) ? t(descKey) : agent.description,
       };
     }
     // 其他内置智能体使用 API 返回的名称和描述

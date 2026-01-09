@@ -11,6 +11,7 @@ export default {
     deleteRecord: 'Delete Record',
     newSession: 'New Chat',
     confirmLogout: 'Are you sure you want to logout?',
+    logoutSuccess: 'Logged out successfully',
     systemInfo: 'System Information'
   },
   knowledgeBase: {
@@ -55,6 +56,13 @@ export default {
     uploadAllSuccess: 'Successfully uploaded {count} files!',
     uploadPartialSuccess: 'Upload completed: {success} succeeded, {fail} failed',
     uploadAllFailed: 'All files failed to upload',
+    uploadSuccessSimple: 'Uploaded successfully!',
+    uploadFailedSimple: 'Upload failed!',
+    fileExist: 'File already exists',
+    allFilesUploaded: 'All files uploaded successfully ({count})',
+    allFilesFailed: 'All files failed to upload ({count})',
+    partialFilesUploaded: 'Partially uploaded (Success: {success}, Failed: {fail})',
+    invalidKbId: 'Missing Knowledge Base ID',
     uploadingFolder: 'Uploading {total} files from folder...',
     uploadingValidFiles: 'Uploading {valid}/{total} valid files...',
     noValidFiles: 'No valid files',
@@ -207,6 +215,36 @@ export default {
     webSearchFound: 'Found <strong>{count}</strong> web search result(s)',
     argumentsLabel: 'Arguments',
     toolFallback: 'Tool',
+    toolNames: {
+      search_knowledge: 'Knowledge Search',
+      knowledge_search: 'Knowledge Search',
+      grep_chunks: 'Pattern Search',
+      web_search: 'Web Search',
+      web_fetch: 'Web Fetch',
+      get_document_info: 'Get Document Info',
+      list_knowledge_chunks: 'List Knowledge Chunks',
+      get_related_documents: 'Find Related Documents',
+      get_document_content: 'Get Document Content',
+      todo_write: 'Plan Management',
+      knowledge_graph_extract: 'Knowledge Graph Extraction',
+      thinking: 'Thinking',
+      get_document: 'Get Document',
+      list_chunks: 'List Chunks'
+    },
+    summary: {
+      searchCount: 'Searched knowledge base <strong>{count}</strong> times',
+      thinkingCount: 'Thought <strong>{count}</strong> times',
+      callTool: 'Called {name}',
+      callTools: 'Called tools {names}',
+      intermediateSteps: '<strong>{count}</strong> intermediate steps',
+      separator: ', ',
+      lastSeparator: ', '
+    },
+    status: {
+      inProgress: 'In Progress',
+      pending: 'Pending',
+      completed: 'Completed'
+    },
     title: 'Agents',
     subtitle: 'Configure and manage your agents to customize conversation behavior and capabilities',
     createAgent: 'Create Agent',
@@ -265,15 +303,33 @@ export default {
       builtinReadonly: 'Built-in agents cannot be edited',
       copied: 'Agent copied successfully',
       copyFailed: 'Copy failed',
+      loadFailed: 'Failed to load configuration',
     },
     editor: {
+      builtinAgentHint: 'This is a built-in agent. Name and description cannot be modified, but configuration parameters can be adjusted.',
       createTitle: 'Create Agent',
       editTitle: 'Edit Agent',
       basicInfo: 'Basic Info',
       basicInfoDesc: 'Configure agent basic information',
+      mode: 'Running Mode',
+      agentDesc: 'Smart Agent with thinking, reasoning and tool-calling capabilities',
+      normalDesc: 'Traditional Q&A mode based on Prompt and knowledge base retrieval',
+      name: 'Name',
+      nameDesc: 'Set an easy-to-identify name for the agent',
+      description: 'Description',
+      descriptionDesc: 'Briefly describe the purpose and features of the agent',
+      systemPrompt: 'System Prompt',
+      systemPromptDesc: 'Custom system prompt to define agent behavior and role',
+      systemPromptBuiltinHint: '(Leave empty to use system default)',
+      availableVariables: 'Available Variables:',
+      clickToInsert: '(Click to insert)',
+      insertPlaceholder: "(Click to insert, or type {'{'}{'{'} to trigger list)",
+      contextTemplate: 'Context Template',
+      contextTemplateDesc: 'Define how to format retrieved content before passing to the model',
+      contextTemplatePlaceholder: 'Custom context template...',
       modelConfig: 'Model Config',
       modelConfigDesc: 'Configure agent model parameters',
-      capabilities: 'Capabilities',
+      capabilities: 'Capabilities & Tools',
       capabilitiesDesc: 'Configure agent capabilities and tools',
       toolsConfig: 'Tools',
       toolsConfigDesc: 'Configure tools available to the Agent',
@@ -282,86 +338,183 @@ export default {
       webSearchConfig: 'Web Search',
       webSearchConfigDesc: 'Configure web search capabilities for the agent',
       configuration: 'Configuration',
-      name: 'Name',
       namePlaceholder: 'Enter agent name',
       nameRequired: 'Agent name is required',
       systemPromptRequired: 'System prompt is required',
       modelRequired: 'Please select a model',
-      rerankModelRequired: 'ReRank model is required when using knowledge bases',
-      contextsMissing: 'Context template must contain {{contexts}} placeholder when knowledge base is enabled',
-      queryMissingInContext: 'Context template must contain {{query}} placeholder',
-      knowledgeBasesMissing: 'It is recommended to include {{knowledge_bases}} placeholder in system prompt so the model knows available knowledge bases',
-      queryMissingInRewrite: 'Rewrite user prompt must contain {{query}} placeholder',
-      conversationMissing: 'Rewrite user prompt must contain {{conversation}} placeholder',
-      queryMissingInFallback: 'Fallback prompt must contain {{query}} placeholder',
+      rerankModelRequired: 'Please select a ReRank model when using knowledge base',
+      contextsMissing: "Context template must contain {'{'}{'{'}contexts{'}'}{'}'} placeholder when knowledge base is enabled",
+      queryMissingInContext: "Context template must contain {'{'}{'{'}query{'}'}{'}'} placeholder",
+      knowledgeBasesMissing: "It is recommended to include {'{'}{'{'}knowledge_bases{'}'}{'}'} placeholder in system prompt so the model knows available knowledge bases",
+      queryMissingInRewrite: "Rewrite user prompt must contain {'{'}{'{'}query{'}'}{'}'} placeholder",
+      conversationMissing: "Rewrite user prompt must contain {'{'}{'{'}conversation{'}'}{'}'} placeholder",
+      queryMissingInFallback: "Fallback prompt must contain {'{'}{'{'}query{'}'}{'}'} placeholder",
       avatar: 'Avatar',
       avatarPlaceholder: 'Enter Emoji or select',
-      description: 'Description',
       descriptionPlaceholder: 'Enter agent description',
-      baseType: 'Base Type',
-      normalDesc: 'Quick response, direct answers',
-      agentDesc: 'Multi-step thinking, deep analysis for complex questions',
       model: 'Model',
+      modelDesc: 'Select the large language model used by the agent',
       modelPlaceholder: 'Select Model',
-      systemPrompt: 'System Prompt',
-      systemPromptPlaceholder: 'Custom system prompt to define agent behavior and role (use {{web_search_status}} placeholder for dynamic web search behavior)',
+      systemPromptPlaceholder: "Custom system prompt to define agent behavior and role (use {'{'}{'{'}web_search_status{'}'}{'}'} placeholder for dynamic web search behavior)",
       defaultPromptHint: 'Leave empty to use the following default system prompt:',
       defaultContextTemplateHint: 'Leave empty to use the following default context template:',
       contextTemplateRequired: 'Context template is required',
       availablePlaceholders: 'Available Placeholders',
-      placeholderHint: 'Type {{ to trigger autocomplete',
+      placeholderHint: "Type {'{'}{'{'} to trigger autocomplete",
       temperature: 'Temperature',
+      temperatureDesc: 'Control output randomness, 0 is most deterministic, 1 is most random',
       welcomeMessage: 'Welcome Message',
       welcomeMessagePlaceholder: 'Message displayed when this agent is selected',
+      welcomeMessageDesc: 'Welcome message displayed when this agent is selected',
       suggestedPrompts: 'Suggested Prompts',
-      mode: 'Running Mode',
+      suggestedPromptsDesc: 'Recommended prompts for users',
       webSearch: 'Web Search',
+      webSearchDesc: 'Enable to allow the agent to search the internet for information',
       webSearchMaxResults: 'Max Search Results',
+      webSearchMaxResultsDesc: 'Maximum number of results returned for each search',
       knowledgeBases: 'Knowledge Bases',
-      allKnowledgeBases: 'All Knowledge Bases',
+      knowledgeBasesDesc: 'Select the range of knowledge bases the agent can access',
+      allKnowledgeBases: 'All',
       allKnowledgeBasesDesc: 'Agent can access all knowledge bases',
-      selectedKnowledgeBases: 'Selected Knowledge Bases',
+      selectedKnowledgeBases: 'Specified',
       selectedKnowledgeBasesDesc: 'Only access selected knowledge bases',
-      noKnowledgeBase: 'No Knowledge Base',
+      noKnowledgeBase: 'Disabled',
       noKnowledgeBaseDesc: 'Pure model conversation, no knowledge retrieval',
       selectKnowledgeBases: 'Select Knowledge Bases',
+      selectKnowledgeBasesDesc: 'Select knowledge bases to associate',
+      supportedFileTypes: 'Supported File Types',
+      supportedFileTypesDesc: 'Limit selectable file types, leave empty to support all types',
+      allFileTypesPlaceholder: 'All Types',
       rerankModel: 'ReRank Model',
       rerankModelDesc: 'Used to rerank knowledge base retrieval results for better accuracy',
       rerankModelPlaceholder: 'Select ReRank Model',
       maxIterations: 'Max Iterations',
+      maxIterationsDesc: 'Maximum number of reasoning steps when the agent executes tasks',
       allowedTools: 'Allowed Tools',
+      allowedToolsDesc: 'Select tools that the agent can use',
+      kbDisabledHint: '(Knowledge base configuration required)',
+      mcpServices: 'MCP Services',
+      mcpServicesDesc: 'Select MCP services that the agent can call',
+      mcpSelectionModeAll: 'All',
+      mcpSelectionModeSelected: 'Specified',
+      mcpSelectionModeNone: 'Disabled',
+      selectMcpServices: 'Select MCP Services',
+      selectMcpServicesDesc: 'Select MCP services to enable',
+      mcpServicesPlaceholder: 'Select MCP services',
       multiTurn: 'Multi-turn Conversation',
+      multiTurnDesc: 'Keep historical conversation context when enabled',
       historyTurns: 'History Turns',
-      // Retrieval Strategy
+      historyTurnsDesc: 'Keep the most recent conversation rounds as context',
       retrievalStrategy: 'Retrieval Strategy',
+      retrievalStrategyDesc: 'Configure parameters for knowledge base retrieval and ranking',
       embeddingTopK: 'Embedding Top K',
+      embeddingTopKDesc: 'Maximum number of results returned by vector retrieval',
       keywordThreshold: 'Keyword Threshold',
+      keywordThresholdDesc: 'Minimum relevance score for keyword retrieval',
       vectorThreshold: 'Vector Threshold',
+      vectorThresholdDesc: 'Minimum similarity score for vector retrieval',
       rerankTopK: 'Rerank Top K',
+      rerankTopKDesc: 'Maximum number of results kept after reranking',
       rerankThreshold: 'Rerank Threshold',
-      // Conversation Settings
-      conversationSettings: 'Conversation',
-      // Advanced Settings
+      rerankThresholdDesc: 'Minimum relevance score for reranking',
+      conversationSettings: 'Multi-turn',
+      conversationSettingsDesc: 'Configure multi-turn conversation and question rewrite parameters',
       advancedSettings: 'Advanced Settings',
-      contextTemplate: 'Context Template',
-      contextTemplatePlaceholder: 'Custom context template...',
       availableContextPlaceholders: 'Available Placeholders',
       placeholderQuery: 'User query',
       placeholderContexts: 'Retrieved content list',
       placeholderCurrentTime: 'Current time (format: 2006-01-02 15:04:05)',
       placeholderCurrentWeek: 'Current weekday (e.g., Monday)',
       enableQueryExpansion: 'Query Expansion',
+      enableQueryExpansionDesc: 'Automatically expand query terms to improve recall',
       enableRewrite: 'Query Rewrite',
+      enableRewriteDesc: 'Automatically rewrite user questions in multi-turn conversation to resolve references and complete omissions',
       rewritePromptSystem: 'Rewrite System Prompt',
+      rewritePromptSystemDesc: 'System prompt for question rewrite (leave empty to use default)',
       rewritePromptSystemPlaceholder: 'Leave empty to use default prompt',
       rewritePromptUser: 'Rewrite User Prompt',
+      rewritePromptUserDesc: 'User prompt template for question rewrite (leave empty to use default)',
       rewritePromptUserPlaceholder: 'Leave empty to use default prompt',
       maxCompletionTokens: 'Max Completion Tokens',
+      maxCompletionTokensDesc: 'Maximum number of tokens generated by the model',
       fallbackStrategy: 'Fallback Strategy',
+      fallbackStrategyDesc: 'How to handle cases when no relevant content is found in the knowledge base',
+      fallbackStrategyFixed: 'Fixed Response',
+      fallbackStrategyModel: 'Model Generated',
       fallbackResponse: 'Fixed Response',
+      fallbackResponseDesc: 'Fixed text returned when unable to answer',
       fallbackResponsePlaceholder: 'Sorry, I cannot answer this question.',
       fallbackPrompt: 'Fallback Prompt',
+      fallbackPromptDesc: 'Prompt used to guide model generation when no answer is found in knowledge base',
       fallbackPromptPlaceholder: 'Leave empty to use default prompt',
+      faqStrategy: 'FAQ Priority Strategy',
+      faqStrategyDesc: 'When the knowledge base contains FAQs (question-answer pairs), enable this strategy to prioritize FAQ answers over regular documents',
+      enableFaqPriority: 'Enable FAQ Priority',
+      enableFaqPriorityDesc: 'FAQ answers will be prioritized over regular documents to improve accuracy',
+      faqDirectAnswerThreshold: 'Direct Answer Threshold',
+      faqDirectAnswerThresholdDesc: 'When question similarity to FAQ exceeds this value, use FAQ answer directly',
+      faqScoreBoost: 'FAQ Score Boost',
+      faqScoreBoostDesc: 'Relevance score of FAQ results is multiplied by this coefficient to rank them higher',
+      tools: {
+        thinking: {
+          label: 'Thinking',
+          description: 'Dynamic and reflective problem-solving thinking tool'
+        },
+        todo_write: {
+          label: 'Plan',
+          description: 'Create structured research plans'
+        },
+        grep_chunks: {
+          label: 'Keyword Search',
+          description: 'Quickly locate documents and chunks containing specific keywords'
+        },
+        knowledge_search: {
+          label: 'Semantic Search',
+          description: 'Understand questions and find semantically relevant content'
+        },
+        list_knowledge_chunks: {
+          label: 'View Document Chunks',
+          description: 'Get full content of document chunks'
+        },
+        query_knowledge_graph: {
+          label: 'Query Knowledge Graph',
+          description: 'Query relationships from knowledge graph'
+        },
+        get_document_info: {
+          label: 'Get Document Info',
+          description: 'View document metadata'
+        },
+        database_query: {
+          label: 'Query Database',
+          description: 'Query information in the database'
+        },
+        data_analysis: {
+          label: 'Data Analysis',
+          description: 'Understand data files and perform data analysis'
+        },
+        data_schema: {
+          label: 'View Data Meta-info',
+          description: 'Get meta-info of tabular files'
+        }
+      },
+      fileTypes: {
+        pdf: 'PDF Document',
+        docx: 'Word Document (.docx/.doc)',
+        txt: 'Plain Text File (.txt)',
+        md: 'Markdown Document',
+        csv: 'Comma Separated Values',
+        xlsx: 'Excel Spreadsheet (.xlsx/.xls)',
+        jpg: 'Image File (.jpg/.jpeg/.png)'
+      },
+      fileTypeLabels: {
+        pdf: 'PDF',
+        docx: 'Word',
+        txt: 'TXT',
+        md: 'Markdown',
+        csv: 'CSV',
+        xlsx: 'Excel',
+        jpg: 'Image'
+      }
     },
     selector: {
       title: 'Select Agent',
@@ -525,6 +678,21 @@ export default {
     howToEnable: 'How to enable knowledge graph?',
     saveSuccess: 'Graph configuration saved',
     saveFailed: 'Failed to save configuration: {message}',
+    exampleData: {
+      text: '"Dream of the Red Chamber", also known as "The Story of the Stone", is one of the four great classical novels of Chinese literature. It was written by Cao Xueqin during the Qing Dynasty. The first 80 chapters were written by Cao, and the last 40 are generally attributed to Gao E. The novel follows the rise and fall of the Jia, Shi, Wang, and Xue families, focusing on the tragic love story between Jia Baoyu, Lin Daiyu, and Xue Baochai.',
+      tags: ['Author', 'Alias'],
+      nodes: [
+        { name: 'Dream of the Red Chamber', attributes: ['One of the four great classical novels', 'Also known as "The Story of the Stone"', 'Encyclopedia of feudal China'] },
+        { name: 'The Story of the Stone', attributes: ['Alias of "Dream of the Red Chamber"'] },
+        { name: 'Cao Xueqin', attributes: ['Writer of the Qing Dynasty', 'Author of the first 80 chapters'] },
+        { name: 'Gao E', attributes: ['Generally considered the author of the last 40 chapters'] }
+      ],
+      relations: [
+        { node1: 'Dream of the Red Chamber', node2: 'The Story of the Stone', type: 'Alias' },
+        { node1: 'Dream of the Red Chamber', node2: 'Cao Xueqin', type: 'Author' },
+        { node1: 'Dream of the Red Chamber', node2: 'Gao E', type: 'Author' }
+      ]
+    },
     errors: {
       unknown: 'Unknown error',
     },
@@ -791,6 +959,11 @@ export default {
     }
   },
   common: {
+    user: 'User',
+    avatar: 'Avatar',
+    ollama: 'Ollama',
+    github: 'GitHub',
+    url: 'URL',
     confirm: 'Confirm',
     cancel: 'Cancel',
     save: 'Save',
@@ -834,6 +1007,9 @@ export default {
     file: 'File',
     knowledgeBase: 'Knowledge Base',
     noResult: 'No results',
+    unknown: 'Unknown',
+    today: 'Today',
+    yesterday: 'Yesterday',
   },
   file: {
     upload: 'Upload File',
@@ -1114,6 +1290,16 @@ export default {
       questionIndexModeDescription: 'Combined: Standard and similar questions are indexed together. Separate: Each question is indexed independently for more precise retrieval but requires more storage.',
       entryGuide: 'Each FAQ entry contains a primary question, similar questions, negative examples, and multiple answers. Manage them in the FAQ knowledge base detail view.',
       tagDesc: 'Select category for FAQ entries',
+      tagPlaceholder: 'Select Category',
+      importing: 'Importing...',
+      importComplete: 'Import Complete',
+      importFailed: 'Import Failed',
+      waiting: 'Waiting...',
+      items: 'items',
+      retry: 'Retry',
+      selectEntriesFirst: 'Please select FAQ entries to operate on first',
+      importInProgress: 'Import is in progress, please wait until it finishes',
+      csvParseFailed: 'CSV parsing failed: {error}',
       modes: {
         questionOnly: 'Questions only',
         questionAnswer: 'Question + answer',
@@ -1404,7 +1590,15 @@ export default {
     enterDescription: 'Enter description',
     rawOutputLabel: 'Raw output',
     selectKnowledgeBaseWarning: 'Please select at least one knowledge base',
-    processError: 'Processing error'
+    processError: 'Processing error',
+    webSearchResult: 'Search Result',
+    sessionExcerpt: 'Session Excerpt',
+    noAnswerContent: '(No answer content)',
+    emptyContentWarning: 'Current answer is empty and cannot be copied',
+    copySuccess: 'Copied to clipboard',
+    copyFailed: 'Copy failed, please copy manually',
+    emptyContentWarningSave: 'Current answer is empty and cannot be saved to knowledge base',
+    editorOpened: 'Editor opened, please select a knowledge base to save'
   },
   tenant: {
     title: 'Tenant Information',
@@ -1776,6 +1970,7 @@ export default {
     deleteRecord: 'Delete Record'
   },
   agentSettings: {
+    globalConfigNotice: 'These are global default configurations. New agents will inherit these settings. You can also configure each agent individually in the agent list.',
     title: 'Agent Settings',
     description: 'Configure the default behavior and parameters for the AI Agent. These settings apply to all chats with Agent mode enabled.',
     modelRecommendation: {
@@ -1830,7 +2025,8 @@ export default {
       custom: 'Custom Prompt',
       disabledHint: 'Currently using the default prompt. Enable custom to apply the content below.',
       placeholder: 'Enter the system prompt, or leave blank to use the default...',
-      tabHint: 'Unified system prompt using {{web_search_status}} placeholder for dynamic web search behavior'
+      tabHint: "Unified system prompt using {'{'}{'{'}web_search_status{'}'}{'}'} placeholder for dynamic web search behavior",
+      tabHintAlt: "(Leave empty to use system default, use {'{'}{'{'}web_search_status{'}'}{'}'} placeholder to dynamically control web search behavior)"
     },
     reset: {
       header: 'Reset to Default Prompt',
@@ -2017,7 +2213,8 @@ export default {
     empty: 'No MCP services',
     addFirst: 'Add the first MCP service',
     actions: {
-      test: 'Test Connection'
+      test: 'Test Connection',
+      testSimple: 'Test'
     },
     toasts: {
       loadFailed: 'Failed to load MCP services',
@@ -2025,16 +2222,29 @@ export default {
       disabled: 'MCP service disabled',
       updateStateFailed: 'Failed to update MCP service status',
       testing: 'Testing {name}...',
+      testingSimple: 'Testing...',
+      testSuccess: 'Connection successful',
       noResponse: 'Test failed: no response from server',
       testFailed: 'Failed to test MCP service',
       deleted: 'MCP service deleted',
       deleteFailed: 'Failed to delete MCP service'
     },
     deleteConfirmBody: 'Delete MCP service "{name}"? This action cannot be undone.',
-    unnamed: 'Unnamed'
+    unnamed: 'Unnamed',
+    transportTypes: {
+      sse: 'SSE',
+      httpStreamable: 'HTTP Streamable',
+      stdio: 'Stdio'
+    }
   },
   // New: Model Settings
   modelSettings: {
+    builtin: {
+      title: 'Built-in Model',
+      description: 'Built-in models are visible to all tenants, sensitive information is hidden, and they cannot be edited or deleted.',
+      guide: 'View built-in model management guide',
+      label: 'Built-in',
+    },
     title: 'Model Settings',
     description: 'Manage different types of AI models, including local Ollama and remote APIs',
     actions: {
@@ -2077,7 +2287,10 @@ export default {
       deleted: 'Model deleted',
       deleteFailed: 'Failed to delete model',
       setDefault: 'Set as default',
-      setDefaultFailed: 'Failed to set default model'
+      setDefaultFailed: 'Failed to set default model',
+      listFailed: 'Failed to load model list',
+      builtinNoEdit: 'Built-in models cannot be edited',
+      builtinNoDelete: 'Built-in models cannot be deleted',
     },
     confirmDelete: 'Are you sure you want to delete this model?'
   },
@@ -2111,7 +2324,8 @@ export default {
     installed: {
       title: 'Installed Models',
       desc: 'Models installed in Ollama',
-      empty: 'No installed models'
+      empty: 'No installed models',
+      daysAgo: '{days} days ago',
     },
     toasts: {
       connected: 'Connected successfully',

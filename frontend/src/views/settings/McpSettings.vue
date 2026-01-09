@@ -166,7 +166,7 @@ const handleToggleEnabled = async (service: MCPService) => {
 const handleTest = async (service: MCPService) => {
   if (!service || !service.id) return
   
-  testingServiceName.value = service.name || 'MCP 服务'
+  testingServiceName.value = service.name || t('mcpSettings.unnamed')
   testing.value = true
   
   // 显示测试开始提示
@@ -249,7 +249,7 @@ const handleDelete = async (service: MCPService) => {
 const getServiceOptions = (service: MCPService) => {
   return [
     {
-      content: t('mcpSettings.actions.test'),
+      content: t('mcpSettings.actions.testSimple'),
       value: `test-${service.id}`
     },
     {
@@ -295,11 +295,11 @@ const getTransportTypeTheme = (transportType: string) => {
 const getTransportTypeLabel = (transportType: string) => {
   switch (transportType) {
     case 'sse':
-      return 'SSE'
+      return t('mcpSettings.transportTypes.sse')
     case 'http-streamable':
-      return 'HTTP Streamable'
+      return t('mcpSettings.transportTypes.httpStreamable')
     case 'stdio':
-      return 'Stdio'
+      return t('mcpSettings.transportTypes.stdio')
     default:
       return transportType
   }

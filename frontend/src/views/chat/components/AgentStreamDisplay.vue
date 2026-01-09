@@ -1151,8 +1151,13 @@ const getTokens = (content: any) => {
   const contentStr = typeof content === 'string' ? content : String(content || '');
   if (!contentStr.trim()) return [];
   
-  const processed = preprocessMarkdown(contentStr);
-  return marked.lexer(processed);
+  try {
+    const processed = preprocessMarkdown(contentStr);
+    return marked.lexer(processed);
+  } catch (e) {
+    console.error('Markdown lexer error:', e);
+    return [];
+  }
 };
 
 // Render HTML from a single token

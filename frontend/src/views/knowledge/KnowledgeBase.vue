@@ -61,19 +61,19 @@ const docSearchKeyword = ref('');
 const selectedFileType = ref('');
 const UNTAGGED_TAG_ID = '__untagged__';
 const fileTypeOptions = computed(() => [
-  { content: t('knowledgeBase.allFileTypes') || '全部类型', value: '' },
+  { content: t('knowledgeBase.allFileTypes'), value: '' },
   { content: 'PDF', value: 'pdf' },
   { content: 'DOCX', value: 'docx' },
   { content: 'DOC', value: 'doc' },
   { content: 'TXT', value: 'txt' },
   { content: 'MD', value: 'md' },
   { content: 'URL', value: 'url' },
-  { content: t('knowledgeBase.typeManual') || '手动创建', value: 'manual' },
+  { content: t('knowledgeBase.typeManual'), value: 'manual' },
 ]);
 type TagInputInstance = ComponentPublicInstance<{ focus: () => void; select: () => void }>;
 const tagDropdownOptions = computed(() => {
   const options = [
-    { content: t('knowledgeBase.untagged') || '未分类', value: UNTAGGED_TAG_ID },
+    { content: t('knowledgeBase.untagged'), value: UNTAGGED_TAG_ID },
     ...tagList.value
       .filter((tag: any) => tag.id !== UNTAGGED_TAG_ID)
       .map((tag: any) => ({
@@ -124,10 +124,10 @@ const getPageSize = () => {
 getPageSize()
 // 直接调用 API 获取知识库文件列表
 const getTagName = (tagId?: string | number) => {
-  if (!tagId && tagId !== 0) return t('knowledgeBase.untagged') || '未分类';
-  if (tagId === UNTAGGED_TAG_ID) return t('knowledgeBase.untagged') || '未分类';
+  if (!tagId && tagId !== 0) return t('knowledgeBase.untagged');
+  if (tagId === UNTAGGED_TAG_ID) return t('knowledgeBase.untagged');
   const key = String(tagId);
-  return tagMap.value[key]?.name || (t('knowledgeBase.untagged') || '未分类');
+  return tagMap.value[key]?.name || t('knowledgeBase.untagged');
 };
 
 const formatDocTime = (time?: string) => {
@@ -139,10 +139,10 @@ const formatDocTime = (time?: string) => {
 // 获取知识条目的显示类型
 const getKnowledgeType = (item: any) => {
   if (item.type === 'url') {
-    return t('knowledgeBase.typeURL') || 'URL';
+    return t('knowledgeBase.typeURL');
   }
   if (item.type === 'manual') {
-    return t('knowledgeBase.typeManual') || '手动创建';
+    return t('knowledgeBase.typeManual');
   }
   if (item.file_type) {
     return item.file_type.toUpperCase();
@@ -375,7 +375,7 @@ const handleKnowledgeTagChange = async (knowledgeId: string, tagValue: string) =
     // When selecting "untagged", pass null to clear the tag
     const tagIdToUpdate = tagValue === UNTAGGED_TAG_ID ? null : (tagValue || null);
     await updateKnowledgeTagBatch({ updates: { [knowledgeId]: tagIdToUpdate } });
-    MessagePlugin.success(t('knowledgeBase.tagUpdateSuccess') || '分类已更新');
+    MessagePlugin.success(t('knowledgeBase.tagUpdateSuccess'));
     loadKnowledgeFiles(kbId.value);
     loadTags(kbId.value);
   } catch (error: any) {
@@ -633,7 +633,7 @@ const handleDocumentUpload = async (event: Event) => {
   if (!files || files.length === 0) return;
   
   if (!kbId.value) {
-    MessagePlugin.error("缺少知识库ID");
+    MessagePlugin.error(t('knowledgeBase.invalidKbId'));
     resetUploadInput();
     return;
   }
@@ -665,14 +665,14 @@ const handleDocumentUpload = async (event: Event) => {
         successCount++;
       } else {
         failCount++;
-        let errorMessage = "上传失败！";
+        let errorMessage = t('knowledgeBase.uploadFailedSimple');
         if (responseData?.error?.message) {
           errorMessage = responseData.error.message;
         } else if (responseData?.message) {
           errorMessage = responseData.message;
         }
         if (responseData?.code === 'duplicate_file' || responseData?.error?.code === 'duplicate_file') {
-          errorMessage = "文件已存在";
+          errorMessage = t('knowledgeBase.fileExist');
         }
         if (totalCount === 1) {
           MessagePlugin.error(errorMessage);
@@ -680,9 +680,9 @@ const handleDocumentUpload = async (event: Event) => {
       }
     } catch (error: any) {
       failCount++;
-      let errorMessage = error?.error?.message || error?.message || "上传失败！";
+      let errorMessage = error?.error?.message || error?.message || t('knowledgeBase.uploadFailedSimple');
       if (error?.code === 'duplicate_file') {
-        errorMessage = "文件已存在";
+        errorMessage = t('knowledgeBase.fileExist');
       }
       if (totalCount === 1) {
         MessagePlugin.error(errorMessage);
@@ -699,15 +699,15 @@ const handleDocumentUpload = async (event: Event) => {
 
   if (totalCount === 1) {
     if (successCount === 1) {
-      MessagePlugin.success("上传成功！");
+      MessagePlugin.success(t('knowledgeBase.uploadSuccessSimple'));
     }
   } else {
     if (failCount === 0) {
-      MessagePlugin.success(`所有文件上传成功（${successCount}个）`);
+      MessagePlugin.success(t('knowledgeBase.allFilesUploaded', { count: successCount }));
     } else if (successCount > 0) {
-      MessagePlugin.warning(`部分文件上传成功（成功：${successCount}，失败：${failCount}）`);
+      MessagePlugin.warning(t('knowledgeBase.partialFilesUploaded', { success: successCount, fail: failCount }));
     } else {
-      MessagePlugin.error(`所有文件上传失败（${failCount}个）`);
+      MessagePlugin.error(t('knowledgeBase.allFilesFailed', { count: failCount }));
     }
   }
 
@@ -757,7 +757,7 @@ const handleURLImportConfirm = async () => {
   }
 
   if (!kbId.value) {
-    MessagePlugin.error("缺少知识库ID");
+    MessagePlugin.error(t('knowledgeBase.invalidKbId'));
     return;
   }
 
@@ -1049,7 +1049,7 @@ async function createNewSession(value: string): Promise<void> {
                     <t-icon name="folder" size="18px" />
                     <!-- Untagged pseudo-tag: show translated name, no editing -->
                     <template v-if="tag.id === UNTAGGED_TAG_ID">
-                      <span class="tag-name">{{ $t('knowledgeBase.untagged') || '未分类' }}</span>
+                      <span class="tag-name">{{ $t('knowledgeBase.untagged') }}</span>
                     </template>
                     <template v-else-if="editingTagId === tag.id">
                       <div class="tag-edit-input" @click.stop>
@@ -1294,27 +1294,27 @@ async function createNewSession(value: string): Promise<void> {
           <!-- URL 导入对话框 -->
           <t-dialog
             v-model:visible="urlDialogVisible"
-            :header="$t('knowledgeBase.importURLTitle') || '导入网页'"
+            :header="$t('knowledgeBase.importURLTitle')"
             :confirm-btn="{
-              content: $t('common.confirm') || '确认',
+              content: $t('common.confirm'),
               theme: 'primary',
               loading: urlImporting,
             }"
-            :cancel-btn="{ content: $t('common.cancel') || '取消' }"
+            :cancel-btn="{ content: $t('common.cancel') }"
             @confirm="handleURLImportConfirm"
             @cancel="handleURLImportCancel"
             width="500px"
           >
             <div class="url-import-form">
-              <div class="url-input-label">{{ $t('knowledgeBase.urlLabel') || 'URL地址' }}</div>
+              <div class="url-input-label">{{ $t('knowledgeBase.urlLabel') }}</div>
               <t-input
                 v-model="urlInputValue"
-                :placeholder="$t('knowledgeBase.urlPlaceholder') || '请输入网页URL，例如：https://example.com'"
+                :placeholder="$t('knowledgeBase.urlPlaceholder')"
                 clearable
                 autofocus
                 @keydown.enter="handleURLImportConfirm"
               />
-              <div class="url-input-tip">{{ $t('knowledgeBase.urlTip') || '支持导入各类网页内容，系统会自动提取和解析网页中的文本内容' }}</div>
+              <div class="url-input-tip">{{ $t('knowledgeBase.urlTip') }}</div>
             </div>
           </t-dialog>
           
@@ -1760,7 +1760,7 @@ async function createNewSession(value: string): Promise<void> {
   cursor: pointer;
   transition: all 0.2s ease;
   color: #000000e6;
-  font-family: 'PingFang SC';
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   font-weight: 400;
 
@@ -1950,7 +1950,7 @@ async function createNewSession(value: string): Promise<void> {
   h2 {
     margin: 0;
     color: #000000e6;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 24px;
     font-weight: 600;
     line-height: 32px;
@@ -1959,7 +1959,7 @@ async function createNewSession(value: string): Promise<void> {
   .document-subtitle {
     margin: 0;
     color: #00000099;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 14px;
     font-weight: 400;
     line-height: 20px;
@@ -2151,7 +2151,7 @@ async function createNewSession(value: string): Promise<void> {
 
   .circle-title {
     color: #000000e6;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 16px;
     font-weight: 600;
     line-height: 24px;
@@ -2159,7 +2159,7 @@ async function createNewSession(value: string): Promise<void> {
 
   .del-circle-txt {
     color: #00000099;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 14px;
     font-weight: 400;
     line-height: 22px;
@@ -2177,7 +2177,7 @@ async function createNewSession(value: string): Promise<void> {
 
   .circle-btn-txt {
     color: #000000e6;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 14px;
     font-weight: 400;
     line-height: 22px;
@@ -2258,7 +2258,7 @@ async function createNewSession(value: string): Promise<void> {
 
   .card-analyze-txt {
     color: #07c05f;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 12px;
     margin-left: 9px;
   }
@@ -2282,7 +2282,7 @@ async function createNewSession(value: string): Promise<void> {
     text-overflow: ellipsis;
     white-space: nowrap;
     color: #000000e6;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 14px;
     font-weight: 400;
   }
@@ -2317,7 +2317,7 @@ async function createNewSession(value: string): Promise<void> {
     line-clamp: 3;
     overflow: hidden;
     color: #00000066;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 12px;
     font-weight: 400;
     line-height: 20px;
@@ -2338,14 +2338,14 @@ async function createNewSession(value: string): Promise<void> {
 
   .card-time {
     color: #00000066;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 12px;
     font-weight: 400;
   }
 
   .card-type {
     color: #00000066;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 12px;
     font-weight: 400;
     padding: 2px 4px;
@@ -2378,7 +2378,7 @@ async function createNewSession(value: string): Promise<void> {
 
 .knowledge-card-upload {
   color: #000000e6;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 14px;
   font-weight: 400;
   cursor: pointer;
@@ -2401,7 +2401,7 @@ async function createNewSession(value: string): Promise<void> {
 
 .upload-described {
   color: #00000066;
-  font-family: "PingFang SC";
+  font-family: var(--td-font-family, "PingFang SC");
   font-size: 12px;
   font-weight: 400;
   text-align: center;

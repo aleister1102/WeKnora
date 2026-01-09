@@ -11,6 +11,20 @@ import i18n from "./i18n";
 
 const app = createApp(App);
 
+// Global error handler to catch and log errors without blocking UI
+app.config.errorHandler = (err, instance, info) => {
+  console.error('Vue Error:', err);
+  console.error('Component:', instance);
+  console.error('Info:', info);
+  // Don't re-throw - allow the app to continue
+};
+
+// Global warning handler (development only)
+app.config.warnHandler = (msg, instance, trace) => {
+  console.warn('Vue Warning:', msg);
+  console.warn('Trace:', trace);
+};
+
 app.use(TDesign);
 app.use(createPinia());
 app.use(router);

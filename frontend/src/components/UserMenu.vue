@@ -22,7 +22,7 @@
         </div>
         <div class="menu-item" @click="handleQuickNav('ollama')">
           <t-icon name="server" class="menu-icon" />
-          <span>Ollama</span>
+          <span>{{ $t('common.ollama') }}</span>
         </div>
         <div class="menu-item" @click="handleQuickNav('websearch')">
           <svg 
@@ -78,7 +78,7 @@
         <div class="menu-item" @click="openGithub">
           <t-icon name="logo-github" class="menu-icon" />
           <span class="menu-text-with-icon">
-            <span>GitHub</span>
+            <span>{{ $t('common.github') }}</span>
             <svg class="menu-external-icon" viewBox="0 0 16 16" aria-hidden="true">
               <path
                 fill="currentColor"
@@ -117,7 +117,7 @@ const menuVisible = ref(false)
 
 // 用户信息
 const userInfo = ref({
-  username: '用户',
+  username: t('common.user'),
   email: 'user@example.com',
   avatar: ''
 })

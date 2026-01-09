@@ -120,7 +120,7 @@ const handleKBEditorSuccess = (kbId: string) => {
 .dialogue-title {
     display: flex;
     color: #000000;
-    font-family: "PingFang SC";
+    font-family: var(--td-font-family, "PingFang SC");
     font-size: 28px;
     font-weight: 600;
     align-items: center;

@@ -198,7 +198,7 @@
         <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
         </svg>
-        <span class="link-text">GitHub</span>
+        <span class="link-text">{{ $t('common.github') }}</span>
       </a>
       
       <div class="language-switch">
@@ -980,7 +980,7 @@ onMounted(() => {
   font-size: 22px;
   color: rgba(255, 255, 255, 0.95);
   margin: 0 0 8px 0;
-  font-family: "PingFang SC", sans-serif;
+  font-family: var(--td-font-family);
   line-height: 1.4;
   font-weight: 500;
 }
@@ -989,7 +989,7 @@ onMounted(() => {
   font-size: 15px;
   color: rgba(255, 255, 255, 0.8);
   margin: 0 0 28px 0;
-  font-family: "PingFang SC", sans-serif;
+  font-family: var(--td-font-family);
   line-height: 1.5;
 }
 
@@ -1009,7 +1009,7 @@ onMounted(() => {
   color: #ffffff;
   font-size: 14px;
   font-weight: 500;
-  font-family: "PingFang SC", sans-serif;
+  font-family: var(--td-font-family);
 }
 
 /* Carousel */
@@ -1134,7 +1134,7 @@ onMounted(() => {
   text-decoration: none;
   font-size: 13px;
     font-weight: 600;
-  font-family: "PingFang SC", sans-serif;
+  font-family: var(--td-font-family);
   letter-spacing: 0.2px;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
@@ -1229,7 +1229,7 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.2s;
   font-size: 13px;
-  font-family: "PingFang SC", sans-serif;
+  font-family: var(--td-font-family);
   color: #374151;
 
   .lang-flag {
@@ -1291,21 +1291,21 @@ onMounted(() => {
     font-weight: 600;
   color: #111827;
   margin: 0 0 6px 0;
-  font-family: "PingFang SC", sans-serif;
+  font-family: var(--td-font-family);
 }
 
 .form-welcome {
   font-size: 13px;
   color: #6B7280;
     margin: 0;
-  font-family: "PingFang SC", sans-serif;
+  font-family: var(--td-font-family);
 }
 
 .form-subtitle {
   font-size: 13px;
   color: #6B7280;
   margin: 0;
-  font-family: "PingFang SC", sans-serif;
+  font-family: var(--td-font-family);
 }
 
 .form-content {
@@ -1314,7 +1314,7 @@ onMounted(() => {
     color: #111827;
     font-weight: 500;
     margin-bottom: 8px;
-    font-family: "PingFang SC", sans-serif;
+    font-family: var(--td-font-family);
     display: block;
     text-align: left;
   }
@@ -1340,7 +1340,7 @@ onMounted(() => {
       outline: none !important;
       background: transparent;
       font-size: 15px;
-      font-family: "PingFang SC", sans-serif;
+      font-family: var(--td-font-family);
       
       &:focus {
         border: none !important;
@@ -1373,7 +1373,7 @@ onMounted(() => {
   border-radius: 8px;
   font-size: 16px;
   font-weight: 500;
-  font-family: "PingFang SC", sans-serif;
+  font-family: var(--td-font-family);
   margin: 20px 0 16px 0;
   transition: all 0.3s;
 
@@ -1398,7 +1398,7 @@ onMounted(() => {
   text-align: center;
   font-size: 14px;
   color: #6B7280;
-  font-family: "PingFang SC", sans-serif;
+  font-family: var(--td-font-family);
   margin-top: 16px;
   padding-bottom: 16px;
   border-bottom: 1px solid #E5E7EB;
@@ -1427,7 +1427,7 @@ onMounted(() => {
     margin-bottom: 12px;
     font-size: 13px;
     color: #4B5563;
-    font-family: "PingFang SC", sans-serif;
+    font-family: var(--td-font-family);
 
     &:last-child {
       margin-bottom: 0;

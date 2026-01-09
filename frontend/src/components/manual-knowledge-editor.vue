@@ -386,9 +386,14 @@ const previewHTML = computed(() => {
   if (!form.content) {
     return `<p class="empty-preview">${t('manualEditor.preview.empty')}</p>`
   }
-  const safeMarkdown = safeMarkdownToHTML(form.content)
-  const html = marked.parse(safeMarkdown)
-  return sanitizeHTML(html)
+  try {
+    const safeMarkdown = safeMarkdownToHTML(form.content)
+    const html = marked.parse(safeMarkdown)
+    return sanitizeHTML(html)
+  } catch (e) {
+    console.error('Markdown parse error:', e)
+    return sanitizeHTML(form.content)
+  }
 })
 
 const kbDisabled = computed(() => mode.value === 'edit' && !!form.kbId)

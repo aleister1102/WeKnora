@@ -232,17 +232,22 @@ const processMarkdown = (markdownText) => {
   // 安全预处理
   const safeMarkdown = safeMarkdownToHTML(processedText);
 
-  // 使用标记渲染
-  marked.use({ renderer });
-  let html = marked.parse(safeMarkdown);
+  try {
+    // 使用标记渲染
+    marked.use({ renderer });
+    let html = marked.parse(safeMarkdown);
 
-  // 还原被转义的 <br>
-  html = html.replace(/&lt;br\s*\/?&gt;/gi, '<br>');
+    // 还原被转义的 <br>
+    html = html.replace(/&lt;br\s*\/?&gt;/gi, '<br>');
 
-  // 最终安全清理
-  let result = sanitizeHTML(html);
-  
-  return result;
+    // 最终安全清理
+    let result = sanitizeHTML(html);
+    
+    return result;
+  } catch (e) {
+    console.error('Markdown parse error:', e);
+    return sanitizeHTML(processedText);
+  }
 };
 const handleClose = () => {
   emit("closeDoc", false);

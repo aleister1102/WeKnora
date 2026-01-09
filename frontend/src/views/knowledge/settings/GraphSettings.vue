@@ -300,7 +300,7 @@ import { extractTextRelations, fabriText, fabriTag, type Node, type Relation, ty
 import { listModels } from '@/api/model'
 import { getSystemInfo } from '@/api/system'
 
-const { t } = useI18n()
+const { t, tm } = useI18n()
 
 interface GraphExtractConfig {
   enabled: boolean
@@ -516,19 +516,18 @@ const handleExtract = async () => {
 
 // 默认示例
 const defaultExtractExample = () => {
-  localGraphExtract.value.text = `《红楼梦》，又名《石头记》，是清代作家曹雪芹创作的中国古典四大名著之一，被誉为中国封建社会的百科全书。该书前80回由曹雪芹所著，后40回一般认为是高鹗所续。小说以贾、史、王、薛四大家族的兴衰为背景，以贾宝玉、林黛玉和薛宝钗的爱情悲剧为主线，刻画了以贾宝玉和金陵十二钗为中心的正邪两赋、贤愚并出的高度复杂的人物群像。成书于乾隆年间（1743年前后），是中国文学史上现实主义的高峰，对后世影响深远。`
-  localGraphExtract.value.tags = ['作者', '别名']
-  localGraphExtract.value.nodes = [
-    {name: '红楼梦', attributes: ['中国古典四大名著之一', '又名《石头记》', '被誉为中国封建社会的百科全书']},
-    {name: '石头记', attributes: ['《红楼梦》的别名']},
-    {name: '曹雪芹', attributes: ['清代作家', '《红楼梦》前 80 回的作者']},
-    {name: '高鹗', attributes: ['一般认为是《红楼梦》后 40 回的续写者']}
-  ]
-  localGraphExtract.value.relations = [
-    {node1: '红楼梦', node2: '石头记', type: '别名'},
-    {node1: '红楼梦', node2: '曹雪芹', type: '作者'},
-    {node1: '红楼梦', node2: '高鹗', type: '作者'}
-  ]
+  const example = tm('graphSettings.exampleData') as any
+  localGraphExtract.value.text = example.text
+  localGraphExtract.value.tags = example.tags
+  localGraphExtract.value.nodes = example.nodes.map((n: any) => ({
+    name: n.name,
+    attributes: [...n.attributes]
+  }))
+  localGraphExtract.value.relations = example.relations.map((r: any) => ({
+    node1: r.node1,
+    node2: r.node2,
+    type: r.type
+  }))
   handleNodesChange()
   MessagePlugin.success(t('graphSettings.exampleLoaded'))
 }

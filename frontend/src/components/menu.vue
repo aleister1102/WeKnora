@@ -454,7 +454,7 @@ const delCard = (index: number, item: any) => {
                 total.value--;
             }
         } else {
-            MessagePlugin.error("删除失败，请稍后再试!");
+            MessagePlugin.error(t('knowledgeBase.deleteFailed'));
         }
     })
 }
@@ -494,7 +494,7 @@ const getMessageList = async (isLoadMore = false) => {
             // Display all sessions globally without filtering
             res.data.forEach((item: any) => {
                 let obj = { 
-                    title: item.title ? item.title : "新会话", 
+                    title: item.title ? item.title : t('menu.newSession'), 
                     path: `chat/${item.id}`, 
                     id: item.id, 
                     isMore: false, 
@@ -672,7 +672,7 @@ const gotopage = async (path: string) => {
         }
         // 清理所有状态和本地存储
         authStore.logout();
-        MessagePlugin.success('已退出登录');
+        MessagePlugin.success(t('menu.logoutSuccess'));
         router.push('/login');
         return;
     } else {
@@ -1546,7 +1546,7 @@ const handleCreateAgent = () => {
     .menu_title {
         color: #00000099;
         text-overflow: ellipsis;
-        font-family: "PingFang SC";
+        font-family: var(--td-font-family, "PingFang SC");
         font-size: 14px;
         font-style: normal;
         font-weight: 600;
@@ -1558,7 +1558,7 @@ const handleCreateAgent = () => {
     }
 
     .submenu {
-        font-family: "PingFang SC";
+        font-family: var(--td-font-family, "PingFang SC");
         font-size: 14px;
         font-style: normal;
         overflow-y: auto;
@@ -1569,7 +1569,7 @@ const handleCreateAgent = () => {
     }
     
     .timeline_header {
-        font-family: "PingFang SC";
+        font-family: var(--td-font-family, "PingFang SC");
         font-size: 12px;
         font-weight: 600;
         color: #00000066;
