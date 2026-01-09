@@ -235,6 +235,21 @@ func (e *AgentEngine) executeLoop(
 				"round":      state.CurrentRound + 1,
 				"answer_len": len(response.Content),
 			})
+
+			// Check if we have empty content after tool execution
+			hasToolCalls := countTotalToolCalls(state.RoundSteps) > 0
+			if len(response.Content) == 0 && hasToolCalls {
+				logger.Warnf(ctx, "[Agent] Empty final answer detected after tool execution, forcing synthesis")
+				common.PipelineWarn(ctx, "Agent", "empty_answer_detected", map[string]interface{}{
+					"iteration": state.CurrentRound,
+					"round":     state.CurrentRound + 1,
+				})
+				// Don't mark as complete, let synthesis fallback handle it
+				state.RoundSteps = append(state.RoundSteps, step)
+				break // Exit loop to trigger synthesis
+			}
+
+			// Valid non-empty answer or no tool calls executed
 			state.FinalAnswer = response.Content
 			state.IsComplete = true
 			state.RoundSteps = append(state.RoundSteps, step)
@@ -450,11 +465,18 @@ func (e *AgentEngine) executeLoop(
 	}
 
 	// If loop finished without final answer, generate one
-	if !state.IsComplete {
-		logger.Info(ctx, "Reached max iterations, generating final answer")
-		common.PipelineWarn(ctx, "Agent", "max_iterations_reached", map[string]interface{}{
+	if !state.IsComplete || (state.IsComplete && state.FinalAnswer == "" && countTotalToolCalls(state.RoundSteps) > 0) {
+		if state.IsComplete {
+			logger.Warnf(ctx, "[Agent] Empty final answer detected, forcing synthesis")
+			state.IsComplete = false // Reset to trigger synthesis
+		} else {
+			logger.Info(ctx, "Reached max iterations, generating final answer")
+		}
+
+		common.PipelineWarn(ctx, "Agent", "synthesis_triggered", map[string]interface{}{
 			"iterations": state.CurrentRound,
 			"max":        e.config.MaxIterations,
+			"reason":     "empty_answer_or_max_iterations",
 		})
 
 		// Stream final answer generation through EventBus
