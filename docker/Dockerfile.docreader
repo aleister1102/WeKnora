@@ -3,9 +3,15 @@
 # =========================
 FROM python:3.10.18-bookworm AS builder
 
-# 切换 apt 源到清华
-RUN sed -i 's@http://deb.debian.org@https://mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list.d/debian.sources && \
-    sed -i 's@http://security.debian.org@https://mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list.d/debian.sources
+# 可选：切换 apt 源（默认使用官方源）
+ARG APT_MIRROR_ARG=deb.debian.org
+ARG SECURITY_MIRROR_ARG=security.debian.org
+RUN if [ -n "$APT_MIRROR_ARG" ] && [ "$APT_MIRROR_ARG" != "deb.debian.org" ]; then \
+        sed -i "s@deb.debian.org@${APT_MIRROR_ARG}@g" /etc/apt/sources.list.d/debian.sources; \
+    fi && \
+    if [ -n "$SECURITY_MIRROR_ARG" ] && [ "$SECURITY_MIRROR_ARG" != "security.debian.org" ]; then \
+        sed -i "s@security.debian.org@${SECURITY_MIRROR_ARG}@g" /etc/apt/sources.list.d/debian.sources; \
+    fi
 
 WORKDIR /app
 
@@ -94,9 +100,15 @@ RUN ls -la /root/.paddleocr/whl/
 # =========================
 FROM python:3.10.18-bookworm AS runner
 
-# 切换 apt 源到清华
-RUN sed -i 's@http://deb.debian.org@https://mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list.d/debian.sources && \
-    sed -i 's@http://security.debian.org@https://mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list.d/debian.sources
+# 可选：切换 apt 源（默认使用官方源）
+ARG APT_MIRROR_ARG=deb.debian.org
+ARG SECURITY_MIRROR_ARG=security.debian.org
+RUN if [ -n "$APT_MIRROR_ARG" ] && [ "$APT_MIRROR_ARG" != "deb.debian.org" ]; then \
+        sed -i "s@deb.debian.org@${APT_MIRROR_ARG}@g" /etc/apt/sources.list.d/debian.sources; \
+    fi && \
+    if [ -n "$SECURITY_MIRROR_ARG" ] && [ "$SECURITY_MIRROR_ARG" != "security.debian.org" ]; then \
+        sed -i "s@security.debian.org@${SECURITY_MIRROR_ARG}@g" /etc/apt/sources.list.d/debian.sources; \
+    fi
 
 WORKDIR /app
 

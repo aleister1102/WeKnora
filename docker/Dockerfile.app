@@ -7,7 +7,7 @@ WORKDIR /app
 ARG GOPRIVATE_ARG
 ARG GOPROXY_ARG
 ARG GOSUMDB_ARG=off
-ARG APK_MIRROR_ARG
+ARG APK_MIRROR_ARG=deb.debian.org
 
 # 设置Go环境变量
 ENV GOPRIVATE=${GOPRIVATE_ARG}
@@ -15,7 +15,7 @@ ENV GOPROXY=${GOPROXY_ARG}
 ENV GOSUMDB=${GOSUMDB_ARG}
 
 # Install dependencies
-RUN if [ -n "$APK_MIRROR_ARG" ]; then \
+RUN if [ -n "$APK_MIRROR_ARG" ] && [ "$APK_MIRROR_ARG" != "deb.debian.org" ]; then \
         sed -i "s@deb.debian.org@${APK_MIRROR_ARG}@g" /etc/apt/sources.list.d/debian.sources; \
     fi && \
     apt-get update && \
@@ -51,12 +51,12 @@ FROM debian:12.12-slim
 
 WORKDIR /app
 
-ARG APK_MIRROR_ARG
+ARG APK_MIRROR_ARG=deb.debian.org
 
 # Create a non-root user first
 RUN useradd -m -s /bin/bash appuser
 
-RUN if [ -n "$APK_MIRROR_ARG" ]; then \
+RUN if [ -n "$APK_MIRROR_ARG" ] && [ "$APK_MIRROR_ARG" != "deb.debian.org" ]; then \
         sed -i "s@deb.debian.org@${APK_MIRROR_ARG}@g" /etc/apt/sources.list.d/debian.sources; \
     fi && \
     apt-get update && \
