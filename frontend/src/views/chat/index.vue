@@ -414,16 +414,17 @@ onChunk((data) => {
                            data.response_type === 'references' ||
                            data.response_type === 'answer' ||
                            data.response_type === 'reflection' ||
-                           data.response_type === 'stop';
+                           data.response_type === 'stop' ||
+                           data.response_type === 'complete';
     
-    // Agent 模式处理（包括 stop 事件）
+    // Agent 模式处理（包括 stop 和 complete 事件）
     if (isAgentResponse || messagesList[messagesList.length - 1]?.isAgentMode) {
         // 在 handleAgentChunk 中处理 loading 状态
         handleAgentChunk(data);
         
-        // 对于 stop 事件，额外处理全局状态
-        if (data.response_type === 'stop') {
-            console.log('[Stop Event] Generation stopped');
+        // 对于 stop 或 complete 事件，额外处理全局状态
+        if (data.response_type === 'stop' || data.response_type === 'complete') {
+            console.log('[Stop/Complete Event] Generation completed:', data.response_type);
             loading.value = false;
             isReplying.value = false;
             // 清空当前 assistant message ID
@@ -753,6 +754,26 @@ const handleAgentChunk = (data) => {
             // Mark conversation as stopped
             isReplying.value = false;
             fullContent.value = '';
+            break;
+            
+        case 'complete':
+            // 完成事件 - 添加到事件流并标记对话完成
+            console.log('[Agent] Complete event received');
+            if (!message.agentEventStream) message.agentEventStream = [];
+            
+            // Add complete event to stream
+            message.agentEventStream.push({
+                type: 'complete',
+                timestamp: Date.now()
+            });
+            
+            // Mark conversation as completed
+            message.is_completed = true;
+            isReplying.value = false;
+            loading.value = false;
+            fullContent.value = '';
+            // 清空当前 assistant message ID
+            currentAssistantMessageId.value = '';
             break;
     }
     

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Tencent/WeKnora/internal/common"
 	"github.com/Tencent/WeKnora/internal/errors"
 	"github.com/Tencent/WeKnora/internal/event"
 	"github.com/Tencent/WeKnora/internal/logger"
@@ -109,7 +110,7 @@ func (h *Handler) ContinueStream(c *gin.Context) {
 	// Check if stream is already completed
 	streamCompleted := false
 	for _, evt := range events {
-		if evt.Type == "complete" {
+		if evt.Type == "complete" || evt.Type == types.ResponseType(event.EventStop) {
 			streamCompleted = true
 			break
 		}
@@ -152,8 +153,8 @@ func (h *Handler) ContinueStream(c *gin.Context) {
 			// Send new events
 			streamCompletedNow := false
 			for _, evt := range newEvents {
-				// Check for completion event
-				if evt.Type == "complete" {
+				// Check for completion or stop event
+				if evt.Type == "complete" || evt.Type == types.ResponseType(event.EventStop) {
 					streamCompletedNow = true
 				}
 
@@ -286,7 +287,18 @@ func (h *Handler) StopSession(c *gin.Context) {
 		return
 	}
 
-	logger.Infof(ctx, "Stop event written successfully for session: %s, message: %s", sessionID, assistantMessageID)
+	// Update database record to ensure consistency even if the live stream is gone
+	message.IsCompleted = true
+	message.UpdatedAt = time.Now()
+	if message.Content == "" {
+		message.Content = common.GetI18nMsg(ctx, common.I18nKeyStopSessionMessage)
+	}
+	if err := h.messageService.UpdateMessage(ctx, message); err != nil {
+		logger.Errorf(ctx, "Failed to update message status in StopSession: %v", err)
+		// Non-fatal, the stop event was already written to stream
+	}
+
+	logger.Infof(ctx, "Stop event written and message marked as completed for session: %s, message: %s", sessionID, assistantMessageID)
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "Generation stopped",

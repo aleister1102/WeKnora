@@ -102,6 +102,7 @@ func (p *PluginChatCompletionStream) OnEvent(ctx context.Context,
 	go func() {
 		answerID := fmt.Sprintf("%s-answer", uuid.New().String()[:8])
 		var finalContent string
+		doneEmitted := false
 
 		for response := range responseChan {
 			// Handle error responses from the stream
@@ -125,6 +126,9 @@ func (p *PluginChatCompletionStream) OnEvent(ctx context.Context,
 			// Emit event for each answer chunk
 			if response.ResponseType == types.ResponseTypeAnswer {
 				finalContent += response.Content
+				if response.Done {
+					doneEmitted = true
+				}
 				if err := eventBus.Emit(ctx, types.Event{
 					ID:        answerID,
 					Type:      types.EventType(event.EventAgentFinalAnswer),
@@ -137,6 +141,20 @@ func (p *PluginChatCompletionStream) OnEvent(ctx context.Context,
 					logger.Errorf(ctx, "Failed to emit answer event: %v", err)
 				}
 			}
+		}
+
+		// If stream closed without emitting a terminal Done=true event, emit one now
+		if !doneEmitted {
+			logger.Warnf(ctx, "Stream channel closed without terminal Done event for session %s, emitting fallback completion", chatManage.SessionID)
+			_ = eventBus.Emit(ctx, types.Event{
+				ID:        answerID,
+				Type:      types.EventType(event.EventAgentFinalAnswer),
+				SessionID: chatManage.SessionID,
+				Data: event.AgentFinalAnswerData{
+					Content: "",
+					Done:    true,
+				},
+			})
 		}
 
 		pipelineInfo(ctx, "Stream", "channel_close", map[string]interface{}{

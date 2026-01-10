@@ -322,6 +322,25 @@ func (h *Handler) executeNormalModeQA(reqCtx *qaRequestContext, generateTitle bo
 	// Setup SSE stream
 	streamCtx := h.setupSSEStream(reqCtx, generateTitle)
 
+	// Setup error handler to ensure terminal state on failure
+	streamCtx.eventBus.On(event.EventError, func(ctx context.Context, evt event.Event) error {
+		logger.Errorf(streamCtx.asyncCtx, "Error during Knowledge QA for session %s: %v", sessionID, evt.Data)
+
+		// Mark message as completed even on error to avoid hang
+		h.completeAssistantMessage(streamCtx.asyncCtx, streamCtx.assistantMessage)
+
+		// Emit terminal AgentComplete event
+		streamCtx.eventBus.Emit(streamCtx.asyncCtx, event.Event{
+			Type:      event.EventAgentComplete,
+			SessionID: sessionID,
+			Data:      event.AgentCompleteData{FinalAnswer: streamCtx.assistantMessage.Content},
+		})
+
+		// Cancel context to stop any further processing
+		streamCtx.cancel()
+		return nil
+	})
+
 	// Setup completion handler for normal mode
 	streamCtx.eventBus.On(event.EventAgentFinalAnswer, func(ctx context.Context, evt event.Event) error {
 		data, ok := evt.Data.(event.AgentFinalAnswerData)
@@ -423,6 +442,25 @@ func (h *Handler) executeAgentModeQA(reqCtx *qaRequestContext) {
 
 	// Setup SSE stream (agent mode always generates title)
 	streamCtx := h.setupSSEStream(reqCtx, true)
+
+	// Setup error handler for agent mode
+	streamCtx.eventBus.On(event.EventError, func(ctx context.Context, evt event.Event) error {
+		logger.Errorf(streamCtx.asyncCtx, "Error during Agent QA for session %s: %v", sessionID, evt.Data)
+
+		// Mark message as completed to avoid hang
+		h.completeAssistantMessage(streamCtx.asyncCtx, streamCtx.assistantMessage)
+
+		// Emit terminal AgentComplete event
+		streamCtx.eventBus.Emit(streamCtx.asyncCtx, event.Event{
+			Type:      event.EventAgentComplete,
+			SessionID: sessionID,
+			Data:      event.AgentCompleteData{FinalAnswer: streamCtx.assistantMessage.Content},
+		})
+
+		// Cancel context to stop any further processing
+		streamCtx.cancel()
+		return nil
+	})
 
 	// Execute AgentQA asynchronously
 	go func() {

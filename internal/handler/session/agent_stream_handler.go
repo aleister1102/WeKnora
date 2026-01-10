@@ -22,6 +22,7 @@ type AgentStreamHandler struct {
 	requestID          string
 	assistantMessage   *types.Message
 	streamManager      interfaces.StreamManager
+	messageService     interfaces.MessageService
 
 	eventBus *event.EventBus
 
@@ -38,6 +39,7 @@ func NewAgentStreamHandler(
 	sessionID, assistantMessageID, requestID string,
 	assistantMessage *types.Message,
 	streamManager interfaces.StreamManager,
+	messageService interfaces.MessageService,
 	eventBus *event.EventBus,
 ) *AgentStreamHandler {
 	return &AgentStreamHandler{
@@ -47,6 +49,7 @@ func NewAgentStreamHandler(
 		requestID:          requestID,
 		assistantMessage:   assistantMessage,
 		streamManager:      streamManager,
+		messageService:     messageService,
 		eventBus:           eventBus,
 		knowledgeRefs:      make([]*types.SearchResult, 0),
 		eventStartTimes:    make(map[string]time.Time),
@@ -302,6 +305,20 @@ func (h *AgentStreamHandler) handleFinalAnswer(ctx context.Context, evt event.Ev
 			"completed_at": time.Now().Unix(),
 		}
 		delete(h.eventStartTimes, evt.ID)
+		
+		// Update assistant message with final answer and mark as completed
+		h.assistantMessage.Content = h.finalAnswer
+		h.assistantMessage.IsCompleted = true
+		h.assistantMessage.UpdatedAt = time.Now()
+		
+		// Persist message completion to database immediately
+		if h.messageService != nil {
+			if err := h.messageService.UpdateMessage(ctx, h.assistantMessage); err != nil {
+				logger.GetLogger(h.ctx).Errorf("Failed to persist message completion in final answer: %v", err)
+			} else {
+				logger.GetLogger(h.ctx).Infof("Message %s marked as completed via final answer", h.assistantMessageID)
+			}
+		}
 	} else {
 		metadata = map[string]interface{}{
 			"event_id": evt.ID,
@@ -409,12 +426,15 @@ func (h *AgentStreamHandler) handleComplete(ctx context.Context, evt event.Event
 	}
 
 	h.mu.Lock()
-	defer h.mu.Unlock()
 
 	// Update assistant message with final data
 	if data.MessageID == h.assistantMessageID {
-		// h.assistantMessage.Content = data.FinalAnswer
+		// Set final answer content if provided and not already set
+		if data.FinalAnswer != "" && h.assistantMessage.Content == "" {
+			h.assistantMessage.Content = data.FinalAnswer
+		}
 		h.assistantMessage.IsCompleted = true
+		h.assistantMessage.UpdatedAt = time.Now()
 
 		// Update knowledge references if provided
 		if len(data.KnowledgeRefs) > 0 {
@@ -433,7 +453,18 @@ func (h *AgentStreamHandler) handleComplete(ctx context.Context, evt event.Event
 				h.assistantMessage.AgentSteps = steps
 			}
 		}
+
+		// Persist message completion to database immediately
+		if h.messageService != nil {
+			if err := h.messageService.UpdateMessage(ctx, h.assistantMessage); err != nil {
+				logger.GetLogger(h.ctx).Errorf("Failed to persist message completion: %v", err)
+			} else {
+				logger.GetLogger(h.ctx).Infof("Message %s marked as completed and persisted", h.assistantMessageID)
+			}
+		}
 	}
+
+	h.mu.Unlock()
 
 	// Send completion event to stream manager so SSE can detect completion
 	if err := h.streamManager.AppendEvent(h.ctx, h.sessionID, h.assistantMessageID, interfaces.StreamEvent{
