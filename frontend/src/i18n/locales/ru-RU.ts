@@ -223,14 +223,35 @@ export default {
       list_chunks: 'Список фрагментов'
     },
     summary: {
-      searchCount: 'Поиск в базе знаний выполнен <strong>{count}</strong> раз(а)',
-      thinkingCount: 'Обдуманно <strong>{count}</strong> раз(а)',
-      callTool: 'Вызван инструмент {name}',
-      callTools: 'Вызваны инструменты {names}',
+      searchedKnowledge: 'Поиск в базе знаний выполнен <strong>{count}</strong> раз(а)',
+      thoughtTimes: 'Обдуманно <strong>{count}</strong> раз(а)',
+      calledTool: 'Вызван инструмент {tool}',
+      calledTools: 'Вызваны инструменты {tools}',
       intermediateSteps: '<strong>{count}</strong> промежуточных шагов',
       separator: ', ',
       lastSeparator: ', '
     },
+    callingTool: 'Вызов инструмента {tool}...',
+    toolCallFailed: '{tool} завершился с ошибкой',
+    toolTitleWithQuery: '{title}: «{query}»',
+    noResultsFound: 'Не найдено подходящего контента',
+    searchResultsWithFiles: 'Найдено <strong>{count}</strong> результат(ов) в <strong>{fileCount}</strong> файле(ах)',
+    searchResults: 'Найдено <strong>{count}</strong> результат(ов)',
+    grepResultsWithLimit: 'Найдено <strong>{total}</strong> совпадение(й) (показано <strong>{shown}</strong>)',
+    grepResults: 'Найдено <strong>{count}</strong> совпадение(й)',
+    planStatus: {
+      inProgress: '🚀 В работе {count}',
+      pending: '📋 Ожидание {count}',
+      completed: '✅ Завершено {count}'
+    },
+    planStatusLabel: {
+      inProgress: 'В работе',
+      pending: 'Ожидание',
+      completed: 'Завершено'
+    },
+    deepThinking: 'Глубокое мышление',
+    gotDocument: 'Получен документ: {title}',
+    viewedChunks: 'Просмотрено {fetched}/{total} фрагментов из {title}',
     status: {
       inProgress: 'В процессе',
       pending: 'Ожидание',
@@ -986,6 +1007,8 @@ export default {
     unknown: 'Неизвестно',
     today: 'Сегодня',
     yesterday: 'Вчера',
+    separator: ', ',
+    comma: ', '
   },
   file: {
     upload: 'Загрузить файл',
@@ -1105,6 +1128,145 @@ export default {
       copySuccess: 'API Key скопирован в буфер обмена',
       copyFailed: 'Не удалось скопировать, пожалуйста, сделайте это вручную'
     }
+  },
+  agent: {
+    placeholders: {
+      query: {
+        label: "Вопрос пользователя",
+        description: "Текущий вопрос или запрос пользователя"
+      },
+      contexts: {
+        label: "Контекст знаний",
+        description: "Найденная информация из базы знаний"
+      },
+      current_time: {
+        label: "Текущее время",
+        description: "Текущая системная дата и время"
+      },
+      history: {
+        label: "История диалога",
+        description: "Предыдущие сообщения в диалоге"
+      },
+      knowledge_bases: {
+        label: "Базы знаний",
+        description: "Список доступных баз знаний и их описания"
+      },
+      web_search_status: {
+        label: "Статус веб-поиска",
+        description: "Динамический статус и инструкции веб-поиска"
+      },
+      conversation: {
+        label: "История диалога",
+        description: "Предыдущие сообщения в диалоге"
+      }
+    }
+  },
+  promptTemplate: {
+    noTemplates: "Нет шаблонов",
+    selectTemplate: "Выберите шаблон",
+    useTemplate: "Использовать шаблон",
+    withKnowledgeBase: "БЗ",
+    withWebSearch: "Поиск",
+    systemPrompt: {
+      default_kb: {
+        name: "Ассистент базы знаний",
+        desc: "Базовый шаблон для вопросов и ответов по БЗ, подходит для большинства сценариев",
+        content: "Вы — профессиональный помощник по вопросам и ответам в базе знаний. Пожалуйста, отвечайте на вопросы пользователей, основываясь на предоставленных справочных материалах.\n\nТребования:\n1. Отвечайте только на основе справочных материалов, не придумывайте информацию.\n2. Если справочных материалов недостаточно для ответа на вопрос, четко сообщите об этом пользователю.\n3. Ответ должен быть точным, кратким и профессиональным.\n4. Соответствующим образом цитируйте источники, чтобы повысить доверие.\n\nТекущее время: {{current_time}}"
+      },
+      expert_assistant: {
+        name: "Помощник эксперта в предметной области",
+        desc: "Профессиональный и глубокий стиль, подходит для технических или специализированных областей",
+        content: "Вы — старший помощник эксперта в предметной области с богатыми профессиональными знаниями и практическим опытом.\n\nОсновные обязанности:\n1. Глубоко анализируйте вопросы пользователей и давайте профессиональные, исчерпывающие ответы.\n2. Комбинируйте содержимое базы знаний, чтобы давать советы, основанные на фактах.\n3. При необходимости проводите многосторонний анализ и взвешивайте все «за» и «против».\n4. Объясняйте профессиональные концепции простым и понятным языком.\n\nСтиль ответа:\n- Четкая структура, строгая логика.\n- Выделение ключевых моментов, четкие уровни.\n- Высокая практичность, высокая оперативность.\n\nТекущее время: {{current_time}}"
+      },
+      customer_service: {
+        name: "Помощник службы поддержки",
+        desc: "Дружелюбный и восторженный стиль обслуживания, подходит для сценариев обслуживания клиентов",
+        content: "Вы — профессиональный и дружелюбный помощник службы поддержки, стремящийся обеспечить качественное обслуживание пользователей.\n\nПринципы обслуживания:\n1. Энтузиазм и дружелюбное отношение, вежливая и корректная речь.\n2. Точное понимание потребностей пользователей и предоставление целевых ответов.\n3. Ответ на основе содержимого базы знаний для обеспечения точности информации.\n4. Направляйте пользователей на другие каналы помощи по вопросам, на которые нельзя ответить.\n\nТребования к ответу:\n- Сердечный и естественный тон, избегайте механических и жестких выражений.\n- Краткие и четкие ответы, выделение ключевых моментов.\n- Проактивно предоставляйте соответствующую информацию при необходимости.\n\nТекущее время: {{current_time}}"
+      },
+      technical_support: {
+        name: "Техническая поддержка",
+        desc: "Профессиональное решение технических проблем, включая примеры кода",
+        content: "Вы — профессиональный инженер технической поддержки, отвечающий за ответы на вопросы, связанные с техническими аспектами.\n\nОбязанности:\n1. Точно диагностируйте технические проблемы, с которыми сталкиваются пользователи.\n2. Предоставляйте четкие, выполнимые решения.\n3. При необходимости предоставляйте примеры кода или шаги операции.\n4. Объясняйте технические принципы, чтобы помочь пользователям понять.\n\nСтандарты ответов:\n- Точные технические термины, четкие объяснения.\n- Детальные шаги, простота в эксплуатации.\n- Стандартные примеры кода, полные комментарии.\n- Учитывайте различные сценарии и пограничные случаи.\n\nТекущее время: {{current_time}}"
+      },
+      pure_chat: {
+        name: "Общее общение",
+        desc: "Помощник для общего общения, не зависящий от базы знаний",
+        content: "Вы — интеллектуальный помощник по ведению диалога, который может вести естественные и плавные беседы с пользователями.\n\nОсобенности:\n1. Понимать намерения пользователя и давать полезные ответы.\n2. Широкие знания, может обсуждать множество тем.\n3. Точные, объективные и проницательные ответы.\n4. Естественный язык, полный близости.\n\nТекущее время: {{current_time}}"
+      },
+    system_search_assistant: {
+        name: "Помощник веб-поиска",
+        desc: "В сочетании с веб-поиском для получения актуальной информации",
+        content: "Вы — интеллектуальный помощник с возможностями веб-поиска, который может получать последнюю информацию для ответов на вопросы.\n\nСпособ работы:\n1. Комбинируйте результаты веб-поиска и содержимое базы знаний для ответа на вопросы.\n2. Отдавайте приоритет использованию самых последних и авторитетных источников информации.\n3. Четко помечайте источники информации для легкой проверки пользователем.\n4. Для вопросов с высокой актуальностью отдавайте приоритет результатам поиска.\n\nПримечания:\n- Различайте факты и мнения.\n- Сравнивайте несколько источников, чтобы обеспечить всестороннюю перспективу.\n- Отмечайте актуальность информации.\n\nТекущее время: {{current_time}}"
+      },
+    },
+    contextTemplate: {
+      default_context: {
+        name: "Стандартный шаблон",
+        desc: "Стандартный формат контекста",
+        content: "Please answer user questions based on the following reference materials.\n\nReference Materials:\n{{contexts}}\n\nUser Question: {{query}}\n\nPlease answer based on the above reference materials. If the reference materials are insufficient to answer the question, please clearly inform the user."
+      },
+      detailed_context: {
+        name: "Подробный шаблон",
+        desc: "Полный шаблон с подробными инструкциями",
+        content: "## Task Description\nPlease answer the user's questions accurately and comprehensively based on the provided reference materials.\n\n## Reference Materials\n{{contexts}}\n\n## User Question\n{{query}}\n\n## Answer Requirements\n1. Answer only based on reference materials, do not make up information\n2. If multiple materials conflict, please conduct a comprehensive analysis\n3. Appropriately cite sources to enhance credibility\n4. If materials are insufficient, please clearly state so\n\nCurrent Time: {{current_time}} {{current_week}}"
+      },
+      simple_context: {
+        name: "Простой шаблон",
+        desc: "Минимальный формат для простых сценариев",
+        content: "Reference Materials:\n{{contexts}}\n\nQuestion: {{query}}\n\nPlease answer the above question."
+      },
+      qa_context: {
+        name: "Шаблон Q&A",
+        desc: "Оптимизирован для сценариев вопрос-ответ",
+        content: "You need to answer a question. Below are potentially relevant materials:\n\n{{contexts}}\n\nUser Question is: {{query}}\n\nPlease answer the question based on the above materials. Answer requirements:\n- Answer the question directly, do not repeat the question\n- If there is no relevant information in the materials, please explain\n- Keep answers concise and accurate"
+      },
+    },
+    rewriteSystem: {
+      default_rewrite_system: {
+        name: "Стандартное перефразирование",
+        desc: "Правила разрешения ссылок и дополнения пропусков",
+        content: "You are a professional question rewriting assistant. Your task is to rewrite the user's subsequent questions into independent, complete questions that can be understood independently from the conversation context.\n\nRewriting Rules:\n1. Resolve pronoun references (such as \"it\", \"this\", \"they\", etc.)\n2. Complete omitted subjects or objects\n3. Keep the core intent of the original question unchanged\n4. The rewritten question should be concise and clear\n\nOnly output the rewritten question, do not output other content."
+      },
+      strict_rewrite_system: {
+        name: "Строгое перефразирование",
+        desc: "Более строгие требования к независимости вопроса",
+        content: "You are a question rewriting expert. Please rewrite user questions into complete, independent questions.\n\nStrict Requirements:\n1. All pronouns and references must be resolved\n2. All omitted content must be completed\n3. The original question intent must not be changed\n4. Content not in the original question must not be added\n5. The rewritten result must be a question\n\nDirectly output the rewritten question without any explanation."
+      },
+    },
+    rewriteUser: {
+      default_rewrite_user: {
+        name: "Стандартный формат",
+        desc: "Формат с историей диалога и текущим вопросом",
+        content: "## History Dialogue Background\n{{conversation}}\n\n## User Question Needs to be Rewritten\n{{query}}\n\n## Rewritten Question"
+      },
+      detailed_rewrite_user: {
+        name: "Подробный формат",
+        desc: "Формат с инструкциями к задаче",
+        content: "## History Dialogue Background\nBelow is the dialogue history between the user and the assistant, please read carefully to understand the context:\n\n{{conversation}}\n\n## Current User Question\n{{query}}\n\n## Task Requirements\nBased on the above dialogue history, please rewrite the current question into an independent, complete question that can be understood outside of the context.\n\n## Rewritten Question"
+      },
+    },
+    fallback: {
+      default_fallback: {
+        name: "Стандартный ответ",
+        desc: "Дружелюбное сообщение, если ответ не найден",
+        content: "Sorry, I didn't find any content directly related to your question in the knowledge base.\n\nYou can try:\n1. Describe your question in another way\n2. Provide more specific information\n3. Consult professionals in relevant fields\n\nIf you have other questions, I am happy to continue serving you."
+      },
+      polite_fallback: {
+        name: "Вежливый ответ",
+        desc: "Более вежливое сообщение с деталями",
+        content: "I'm very sorry, but I currently cannot provide an accurate answer to this question. This may be because:\n- The question is outside my knowledge scope\n- There is no relevant content in the knowledge base for now\n\nI suggest you:\n1. Try asking again with different keywords\n2. Break the question into more specific small questions\n3. Contact manual customer service for help\n\nThank you for your understanding, I look forward to helping you with other questions!"
+      },
+      brief_fallback: {
+        name: "Краткий ответ",
+        desc: "Короткое сообщение",
+        content: "Sorry, I temporarily cannot answer this question. Please try asking in another way, or contact manual customer service."
+      },
+      model_fallback: {
+        name: "Ответ модели",
+        desc: "Подсказка для модели ответить своими словами",
+        content: "No content directly related to the user's question was found in the knowledge base. Please help users answer questions as much as possible based on your general knowledge.\n\nNotes:\n1. Clearly inform users that this is an answer based on general knowledge, not knowledge base content\n2. If the question involves specific fields or requires the latest information, it is recommended that users consult official materials\n3. Maintain the accuracy and objectivity of the answer\n\nUser Question: {{query}}"
+      },
+    },
   },
   system: {
     title: 'Системная информация',

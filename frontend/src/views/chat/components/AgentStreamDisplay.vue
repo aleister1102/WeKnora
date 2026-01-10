@@ -230,24 +230,27 @@ const router = useRouter();
 const uiStore = useUIStore();
 const { t } = useI18n();
 
-const TOOL_NAME_I18N: Record<string, string> = {
-  search_knowledge: '知识库检索',
-  knowledge_search: '知识库检索',
-  grep_chunks: '文本模式搜索',
-  web_search: '网络搜索',
-  web_fetch: '网页抓取',
-  get_document_info: '获取文档信息',
-  list_knowledge_chunks: '查看知识分块',
-  get_related_documents: '查找相关文档',
-  get_document_content: '获取文档内容',
-  todo_write: '计划管理',
-  knowledge_graph_extract: '知识图谱抽取',
-  thinking: '思考',
-};
-
 const getLocalizedToolName = (toolName?: string | null): string => {
   if (!toolName) return t('agent.toolFallback');
-  return TOOL_NAME_I18N[toolName] || toolName;
+  
+  // Map tool names to i18n keys
+  const toolNameMap: Record<string, string> = {
+    search_knowledge: 'agent.toolNames.searchKnowledge',
+    knowledge_search: 'agent.toolNames.searchKnowledge',
+    grep_chunks: 'agent.toolNames.grepChunks',
+    web_search: 'agent.toolNames.webSearch',
+    web_fetch: 'agent.toolNames.webFetch',
+    get_document_info: 'agent.toolNames.getDocumentInfo',
+    list_knowledge_chunks: 'agent.toolNames.listKnowledgeChunks',
+    get_related_documents: 'agent.toolNames.getRelatedDocuments',
+    get_document_content: 'agent.toolNames.getDocumentContent',
+    todo_write: 'agent.toolNames.todoWrite',
+    knowledge_graph_extract: 'agent.toolNames.knowledgeGraphExtract',
+    thinking: 'agent.toolNames.thinking',
+  };
+  
+  const i18nKey = toolNameMap[toolName];
+  return i18nKey ? t(i18nKey) : toolName;
 };
 
 // 根元素引用
@@ -417,7 +420,7 @@ const isLastThinking = (eventId: string): boolean => {
   return eventId === lastThinkingEventId.value;
 };
 
-// Check if conversation is done (based on answer event with done=true or stop event)
+// Check if conversation is done (based on answer event with done=true, stop event, or complete event)
 const isConversationDone = computed(() => {
   const stream = eventStream.value;
   if (!stream || stream.length === 0) {
@@ -429,6 +432,13 @@ const isConversationDone = computed(() => {
   const stopEvent = stream.find((e: any) => e.type === 'stop');
   if (stopEvent) {
     console.log('[Collapse] Found stop event, conversation done');
+    return true;
+  }
+  
+  // Check for complete event (backend completion marker)
+  const completeEvent = stream.find((e: any) => e.type === 'complete');
+  if (completeEvent) {
+    console.log('[Collapse] Found complete event, conversation done');
     return true;
   }
   
@@ -560,37 +570,33 @@ const intermediateStepsSummary = computed(() => {
   
   const parts: string[] = [];
   if (searchCount > 0) {
-    parts.push(`检索知识库 <strong>${searchCount}</strong> 次`);
+    parts.push(t('agent.summary.searchedKnowledge', { count: searchCount }));
   }
   if (thinkingCount > 0) {
-    parts.push(`思考 <strong>${thinkingCount}</strong> 次`);
+    parts.push(t('agent.summary.thoughtTimes', { count: thinkingCount }));
   }
   if (toolCalls.length > 0) {
-    const toolNames = toolCalls.map(name => {
-      if (name === 'get_document_info') return '获取文档';
-      if (name === 'list_knowledge_chunks') return '查看知识分块';
-      return name;
-    });
+    const toolNames = toolCalls.map(name => getLocalizedToolName(name));
     if (toolNames.length === 1) {
-      parts.push(`调用 ${toolNames[0]}`);
+      parts.push(t('agent.summary.calledTool', { tool: toolNames[0] }));
     } else {
-      parts.push(`调用工具 ${toolNames.join('、')}`);
+      parts.push(t('agent.summary.calledTools', { tools: toolNames.join(t('common.separator')) }));
     }
   }
   
   if (parts.length === 0) {
-    return `<strong>${intermediateStepsCount.value}</strong> 个中间步骤`;
+    return t('agent.summary.intermediateSteps', { count: intermediateStepsCount.value });
   }
   
-  // 优化连接词，使语句更流畅
+  // Join parts with appropriate separators
   if (parts.length === 1) {
     return parts[0];
   } else if (parts.length === 2) {
-    return `${parts[0]}，${parts[1]}`;
+    return `${parts[0]}${t('common.comma')}${parts[1]}`;
   } else {
-    // 3个或以上：前几个用顿号，最后一个用逗号
+    // 3 or more: use separator for first parts, comma for last
     const last = parts.pop();
-    return `${parts.join('、')}，${last}`;
+    return `${parts.join(t('common.separator'))}${t('common.comma')}${last}`;
   }
 });
 
@@ -1206,12 +1212,16 @@ const getToolSummary = (event: any): string => {
     return '';
   } else if (toolName === 'get_document_info') {
     if (toolData?.title) {
-      return `获取文档：${toolData.title}`;
+      return t('agent.gotDocument', { title: toolData.title });
     }
   } else if (toolName === 'list_knowledge_chunks') {
     if (toolData?.fetched_chunks !== undefined) {
-      const title = toolData?.knowledge_title || toolData?.knowledge_id || '文档';
-      return `查看 ${title} 的 ${toolData.fetched_chunks}/${toolData.total_chunks ?? '?'} 个分块`;
+      const title = toolData?.knowledge_title || toolData?.knowledge_id || t('agent.document');
+      return t('agent.viewedChunks', { 
+        title, 
+        fetched: toolData.fetched_chunks, 
+        total: toolData.total_chunks ?? '?' 
+      });
     }
   } else if (toolName === 'todo_write') {
     // Extract steps from tool data
@@ -1222,15 +1232,15 @@ const getToolSummary = (event: any): string => {
       const completed = steps.filter((s: any) => s.status === 'completed').length;
       
       const parts = [];
-      if (inProgress > 0) parts.push(`🚀 进行中 ${inProgress}`);
-      if (pending > 0) parts.push(`📋 待处理 ${pending}`);
-      if (completed > 0) parts.push(`✅ 已完成 ${completed}`);
+      if (inProgress > 0) parts.push(t('agent.planStatus.inProgress', { count: inProgress }));
+      if (pending > 0) parts.push(t('agent.planStatus.pending', { count: pending }));
+      if (completed > 0) parts.push(t('agent.planStatus.completed', { count: completed }));
       
       return parts.join(' · ');
     }
   } else if (toolName === 'thinking') {
     // Return truthy value to trigger rendering, actual content rendered in template
-    return toolData?.thought ? '深度思考' : '';
+    return toolData?.thought ? t('agent.deepThinking') : '';
   }
   
   return '';
@@ -1263,7 +1273,7 @@ const getPlanStatusItems = (event: any) => {
     items.push({
       icon: 'play-circle-filled',
       class: 'in-progress',
-      label: '进行中',
+      label: t('agent.planStatusLabel.inProgress'),
       count: parts.inProgress
     });
   }
@@ -1272,7 +1282,7 @@ const getPlanStatusItems = (event: any) => {
     items.push({
       icon: 'time',
       class: 'pending',
-      label: '待处理',
+      label: t('agent.planStatusLabel.pending'),
       count: parts.pending
     });
   }
@@ -1281,7 +1291,7 @@ const getPlanStatusItems = (event: any) => {
     items.push({
       icon: 'check-circle-filled',
       class: 'completed',
-      label: '已完成',
+      label: t('agent.planStatusLabel.completed'),
       count: parts.completed
     });
   }
@@ -1293,9 +1303,9 @@ const getPlanStatusItems = (event: any) => {
 const getPlanStatusSummary = (event: any): string => {
   const parts = getPlanStatusParts(event);
   const textParts = [];
-  if (parts.inProgress > 0) textParts.push(`🚀 进行中 ${parts.inProgress}`);
-  if (parts.pending > 0) textParts.push(`📋 待处理 ${parts.pending}`);
-  if (parts.completed > 0) textParts.push(`✅ 已完成 ${parts.completed}`);
+  if (parts.inProgress > 0) textParts.push(t('agent.planStatus.inProgress', { count: parts.inProgress }));
+  if (parts.pending > 0) textParts.push(t('agent.planStatus.pending', { count: parts.pending }));
+  if (parts.completed > 0) textParts.push(t('agent.planStatus.completed', { count: parts.completed }));
   return textParts.length > 0 ? textParts.join(' · ') : '';
 };
 
@@ -1329,27 +1339,15 @@ const getSearchResultsSummary = (event: any): string => {
   
   const toolData = event.tool_data;
   const count = toolData.results?.length || toolData.count || 0;
-  if (count === 0) return `未找到匹配的内容`;
+  if (count === 0) return t('agent.noResultsFound');
   
   // Build summary text
-  let summary = '';
   const kbCount = toolData.kb_counts ? Object.keys(toolData.kb_counts).length : 0;
   if (kbCount > 0) {
-    summary = `找到 <strong>${count}</strong> 个结果，来自 <strong>${kbCount}</strong> 个文件`;
+    return t('agent.searchResultsWithFiles', { count, fileCount: kbCount });
   } else {
-    summary = `找到 <strong>${count}</strong> 个结果`;
+    return t('agent.searchResults', { count });
   }
-  return summary;
-};
-
-// Get web search results summary text
-const getWebSearchResultsSummary = (toolData: any): string => {
-  if (!toolData) return '';
-  
-  const count = toolData.results?.length || toolData.count || 0;
-  if (count === 0) return '';
-  
-  return `找到 ${count} 个网络搜索结果`;
 };
 
 // Get results count (number only) for web search summary
@@ -1366,15 +1364,14 @@ const getGrepResultsSummary = (toolData: any): string => {
   const resultCount = toolData.result_count || 0;
   
   if (totalMatches === 0) {
-    return '未找到匹配的内容';
+    return t('agent.noResultsFound');
   }
   
-  let summary = `找到 <strong>${totalMatches}</strong> 处匹配`;
   if (totalMatches > resultCount) {
-    summary += `（显示 <strong>${resultCount}</strong> 个）`;
+    return t('agent.grepResultsWithLimit', { total: totalMatches, shown: resultCount });
+  } else {
+    return t('agent.grepResults', { count: totalMatches });
   }
-  
-  return summary;
 };
 
 // Extract and format query parameters from args
@@ -1416,7 +1413,7 @@ const getQueryText = (args: any): string => {
 const getToolTitle = (event: any): string => {
   if (event.pending) {
     const localizedName = getLocalizedToolName(event.tool_name);
-    return `正在调用 ${localizedName}...`;
+    return t('agent.callingTool', { tool: localizedName });
   }
   
   const toolName = event.tool_name;
@@ -1430,7 +1427,7 @@ const getToolTitle = (event: any): string => {
     if (event.arguments) {
       const queryText = getQueryText(event.arguments);
       if (queryText) {
-        return `${baseTitle}：「${queryText}」`;
+        return t('agent.toolTitleWithQuery', { title: baseTitle, query: queryText });
       }
     }
     return baseTitle;
@@ -1445,7 +1442,7 @@ const getToolTitle = (event: any): string => {
       const query = event.arguments.query;
       // Handle both string and array formats
       if (Array.isArray(query)) {
-        queryText = query.filter((q: any) => q && typeof q === 'string').join('，');
+        queryText = query.filter((q: any) => q && typeof q === 'string').join(t('common.comma'));
       } else if (typeof query === 'string') {
         queryText = query;
       }
@@ -1453,13 +1450,13 @@ const getToolTitle = (event: any): string => {
       const query = event.tool_data.query;
       // Handle both string and array formats
       if (Array.isArray(query)) {
-        queryText = query.filter((q: any) => q && typeof q === 'string').join('，');
+        queryText = query.filter((q: any) => q && typeof q === 'string').join(t('common.comma'));
       } else if (typeof query === 'string') {
         queryText = query;
       }
     }
     if (queryText) {
-      return `${baseTitle}：「${queryText}」`;
+      return t('agent.toolTitleWithQuery', { title: baseTitle, query: queryText });
     }
     return baseTitle;
   }
@@ -1485,9 +1482,9 @@ const getToolTitle = (event: any): string => {
     if (patterns.length > 0) {
       // Show up to 2 patterns in title
       const displayPatterns = patterns.slice(0, 2);
-      const patternText = displayPatterns.join('、');
+      const patternText = displayPatterns.join(t('common.separator'));
       const moreText = patterns.length > 2 ? ` +${patterns.length - 2}` : '';
-      return `${baseTitle}：「${patternText}${moreText}」`;
+      return t('agent.toolTitleWithQuery', { title: baseTitle, query: patternText + moreText });
     }
     return baseTitle;
   }
@@ -1501,26 +1498,15 @@ const getToolTitle = (event: any): string => {
 const getToolDescription = (event: any): string => {
   if (event.pending) {
     const localizedName = getLocalizedToolName(event.tool_name);
-    return `正在调用 ${localizedName}...`;
+    return t('agent.callingTool', { tool: localizedName });
   }
   
   const success = event.success === true;
-  const toolName = event.tool_name;
+  const localizedName = getLocalizedToolName(event.tool_name);
   
-  if (toolName === 'search_knowledge' || toolName === 'knowledge_search') {
-    return success ? '检索知识库' : '检索知识库失败';
-  } else if (toolName === 'web_search') {
-    return success ? '网络搜索' : '网络搜索失败';
-  } else if (toolName === 'get_document_info') {
-    return success ? '获取文档信息' : '获取文档信息失败';
-  } else if (toolName === 'thinking') {
-    return success ? '完成思考' : '思考失败';
-  } else if (toolName === 'todo_write') {
-    return success ? '更新任务列表' : '更新任务列表失败';
-  } else {
-    const localizedName = getLocalizedToolName(toolName);
-    return success ? `调用 ${localizedName}` : `调用 ${localizedName} 失败`;
-  }
+  return success 
+    ? localizedName 
+    : t('agent.toolCallFailed', { tool: localizedName });
 };
 
 // Helper functions

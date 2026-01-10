@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+
+Use bun instead of npm for package management and running scripts.
+
+You can check the docker containers for database, logs, etc.
+
+Use conventional commits for commit messages.
+
+After implement or fix something, please restart the docker containers to apply the changes.

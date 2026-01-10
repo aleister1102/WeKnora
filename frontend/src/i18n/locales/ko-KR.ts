@@ -332,14 +332,35 @@ export default {
       list_chunks: '청크 목록'
     },
     summary: {
-      searchCount: '지식베이스 <strong>{count}</strong>회 검색됨',
-      thinkingCount: '<strong>{count}</strong>회 사고함',
-      callTool: '{name} 도구 호출됨',
-      callTools: '{names} 도구 호출됨',
+      searchedKnowledge: '지식베이스 <strong>{count}</strong>회 검색됨',
+      thoughtTimes: '<strong>{count}</strong>회 사고함',
+      calledTool: '{tool} 도구 호출됨',
+      calledTools: '{tools} 도구 호출됨',
       intermediateSteps: '<strong>{count}</strong>개의 중간 단계',
       separator: ', ',
       lastSeparator: ', '
     },
+    callingTool: '{tool} 호출 중...',
+    toolCallFailed: '{tool} 실패',
+    toolTitleWithQuery: '{title}: 「{query}」',
+    noResultsFound: '일치하는 내용이 없습니다',
+    searchResultsWithFiles: '<strong>{count}</strong>개의 결과를 <strong>{fileCount}</strong>개의 파일에서 발견했습니다',
+    searchResults: '<strong>{count}</strong>개의 결과를 발견했습니다',
+    grepResultsWithLimit: '<strong>{total}</strong>개의 일치 항목을 찾았습니다 (표시 중 <strong>{shown}</strong>)',
+    grepResults: '<strong>{count}</strong>개의 일치 항목을 찾았습니다',
+    planStatus: {
+      inProgress: '🚀 진행 중 {count}',
+      pending: '📋 대기 중 {count}',
+      completed: '✅ 완료됨 {count}'
+    },
+    planStatusLabel: {
+      inProgress: '진행 중',
+      pending: '대기 중',
+      completed: '완료됨'
+    },
+    deepThinking: '심층 분석',
+    gotDocument: '문서 받음: {title}',
+    viewedChunks: '{title}의 {fetched}/{total}개 청크를 확인했습니다',
     status: {
       inProgress: '진행 중',
       pending: '대기 중',
@@ -1032,6 +1053,8 @@ export default {
     unknown: "알 수 없음",
     today: "오늘",
     yesterday: "어제",
+    separator: ", ",
+    comma: ", ",
   },
   file: {
     upload: "파일 업로드",
@@ -1045,6 +1068,145 @@ export default {
     unsupportedFormat: "지원되지 않는 파일 형식",
     maxSizeExceeded: "파일 크기가 제한을 초과했습니다",
     selectFile: "파일 선택",
+  },
+  agent: {
+    placeholders: {
+      query: {
+        label: "사용자 질문",
+        description: "사용자의 현재 질문 또는 쿼리 내용"
+      },
+      contexts: {
+        label: "지식 컨텍스트",
+        description: "지식베이스에서 검색된 관련 정보"
+      },
+      current_time: {
+        label: "현재 시간",
+        description: "현재 시스템 날짜 및 시간"
+      },
+      history: {
+        label: "대화 기록",
+        description: "이전 대화 메시지 내역"
+      },
+      knowledge_bases: {
+        label: "지식베이스",
+        description: "사용 가능한 지식베이스 목록 및 설명"
+      },
+      web_search_status: {
+        label: "웹 검색 상태",
+        description: "동적 웹 검색 상태 및 지침"
+      },
+      conversation: {
+        label: "대화 기록",
+        description: "이전 대화 메시지 내역"
+      }
+    }
+  },
+  promptTemplate: {
+    noTemplates: "템플릿 없음",
+    selectTemplate: "템플릿 선택",
+    useTemplate: "템플릿 사용",
+    withKnowledgeBase: "지식베이스",
+    withWebSearch: "웹 검색",
+    systemPrompt: {
+      default_kb: {
+        name: "지식베이스 답변 어시스턴트",
+        desc: "대부분의 시나리오에 적합한 기본적인 지식베이스 Q&A 템플릿",
+        content: "귀하는 전문적인 지식베이스 Q&A 어시스턴트입니다. 제공된 참고 자료를 바탕으로 사용자 질문에 답해 주십시오.\n\n요구 사항:\n1. 참고 자료에만 근거하여 답하고 정보를 꾸며내지 마십시오.\n2. 참고 자료가 질문에 답하기에 부족한 경우 사용자에게 명확하게 알리십시오.\n3. 답변은 정확하고 간결하며 전문적이어야 합니다.\n4. 신뢰성을 높이기 위해 출처를 적절히 인용하십시오.\n\n현재 시간: {{current_time}}"
+      },
+      expert_assistant: {
+        name: "도메인 전문가 어시스턴트",
+        desc: "기술 또는 전문 분야에 적합한 전문적이고 심층적인 답변 스타일",
+        content: "귀하는 풍부한 전문 지식과 실무 경험을 갖춘 수석 도메인 전문가 어시스턴트입니다.\n\n핵심 책임:\n1. 사용자 질문을 깊이 있게 분석하고 전문적이며 포괄적인 답변을 제공합니다.\n2. 지식베이스 내용을 결합하여 증거 기반 제안을 제공합니다.\n3. 필요에 따라 다각도 분석을 제공하고 장단점을 따져봅니다.\n4. 전문 개념을 쉽고 이해하기 쉬운 언어로 설명합니다.\n\n답변 스타일:\n- 명확한 구조, 엄격한 논리.\n- 핵심 사항 강조, 뚜렷한 단계.\n- 강력한 실용성, 높은 조작성.\n\n현재 시간: {{current_time}}"
+      },
+      customer_service: {
+        name: "고객 서비스 어시스턴트",
+        desc: "고객 서비스 시나리오에 적합한 친절하고 열정적인 서비스 스타일",
+        content: "귀하는 전문적이고 친절한 고객 서비스 어시스턴트로서 사용자에게 양질의 서비스 경험을 제공하기 위해 최선을 다합니다.\n\n서비스 원칙:\n1. 열정적이고 친절한 태도, 정중하고 적절한 언어 사용.\n2. 사용자 니즈를 정확히 파악하고 맞춤형 답변 제공.\n3. 정보의 정확성을 보장하기 위해 지식베이스 내용에 기반하여 답변.\n4. 답변할 수 없는 질문에 대해서는 다른 도움 채널로 사용자를 안내.\n\n답변 요구 사항:\n- 따뜻하고 자연스러운 어조, 기계적이고 딱딱한 표현 지양.\n- 간결하고 명확한 답변, 핵심 사항 강조.\n- 필요 시 관련 정보를 선제적으로 제공.\n\n현재 시간: {{current_time}}"
+      },
+      technical_support: {
+        name: "기술 지원",
+        desc: "코드 예시를 포함한 전문적인 기술 문제 해결",
+        content: "귀하는 기술 관련 질문에 답변하는 전문 기술 지원 엔지니어입니다.\n\n책임:\n1. 사용자가 겪는 기술적 문제를 정확하게 진단합니다.\n2. 명확하고 실행 가능한 해결책을 제공합니다.\n3. 필요 시 코드 예시나 작업 단계를 제공합니다.\n4. 사용자의 이해를 돕기 위해 기술적 원리를 설명합니다.\n\n답변 표준:\n- 정확한 기술 용어, 명확한 설명.\n- 상세한 단계, 쉬운 조작.\n- 표준 코드 예시, 완전한 주석.\n- 다양한 시나리오와 경계 사례 고려.\n\n현재 시간: {{current_time}}"
+      },
+      pure_chat: {
+        name: "일반 대화",
+        desc: "지식베이스에 의존하지 않는 일반적인 대화 어시스턴트",
+        content: "귀하는 사용자와 자연스럽고 원활한 대화를 나눌 수 있는 지능형 대화 어시스턴트입니다.\n\n특징:\n1. 사용자 의도를 이해하고 도움이 되는 답변을 제공합니다.\n2. 지식이 풍부하여 다양한 주제에 대해 토론할 수 있습니다.\n3. 정확하고 객관적이며 통찰력 있는 답변을 제공합니다.\n4. 친화력이 넘치는 자연스러운 언어 사용.\n\n현재 시간: {{current_time}}"
+      },
+      web_search_assistant: {
+        name: "웹 검색 어시스턴트",
+        desc: "최신 정보를 얻기 위해 웹 검색과 결합",
+        content: "귀하는 웹 검색 기능이 있는 지능형 어시스턴트로서 질문에 답하기 위해 최신 정보를 얻을 수 있습니다.\n\n작동 방식:\n1. 웹 검색 결과와 지식베이스 내용을 결합하여 질문에 답합니다.\n2. 최신이고 가장 권위 있는 정보원을 우선적으로 사용합니다.\n3. 사용자가 쉽게 확인할 수 있도록 정보원을 명확하게 표시합니다.\n4. 시의성이 높은 질문의 경우 검색 결과를 우선적으로 참고합니다.\n\n참고:\n- 사실과 의견을 구분하십시오.\n- 포괄적인 시각을 제공하기 위해 여러 소스를 비교하십시오.\n- 정보의 시의성을 표시하십시오.\n\n현재 시간: {{current_time}}"
+      },
+    },
+    contextTemplate: {
+      default_context: {
+        name: "표준 템플릿",
+        desc: "표준 컨텍스트 형식 템플릿",
+        content: "Please answer user questions based on the following reference materials.\n\nReference Materials:\n{{contexts}}\n\nUser Question: {{query}}\n\nPlease answer based on the above reference materials. If the reference materials are insufficient to answer the question, please clearly inform the user."
+      },
+      detailed_context: {
+        name: "상세 템플릿",
+        desc: "상세 지침 및 요구 사항이 포함된 전체 템플릿",
+        content: "## Task Description\nPlease answer the user's questions accurately and comprehensively based on the provided reference materials.\n\n## Reference Materials\n{{contexts}}\n\n## User Question\n{{query}}\n\n## Answer Requirements\n1. Answer only based on reference materials, do not make up information\n2. If multiple materials conflict, please conduct a comprehensive analysis\n3. Appropriately cite sources to enhance credibility\n4. If materials are insufficient, please clearly state so\n\nCurrent Time: {{current_time}} {{current_week}}"
+      },
+      simple_context: {
+        name: "간단 템플릿",
+        desc: "단순 Q&A 시나리오를 위한 최소한의 템플릿",
+        content: "Reference Materials:\n{{contexts}}\n\nQuestion: {{query}}\n\nPlease answer the above question."
+      },
+      qa_context: {
+        name: "Q&A 템플릿",
+        desc: "Q&A 시나리오에 최적화된 템플릿",
+        content: "You need to answer a question. Below are potentially relevant materials:\n\n{{contexts}}\n\nUser Question is: {{query}}\n\nPlease answer the question based on the above materials. Answer requirements:\n- Answer the question directly, do not repeat the question\n- If there is no relevant information in the materials, please explain\n- Keep answers concise and accurate"
+      },
+    },
+    rewriteSystem: {
+      default_rewrite_system: {
+        name: "표준 재작성",
+        desc: "참조 해결 및 누락 보완을 위한 표준 규칙",
+        content: "You are a professional question rewriting assistant. Your task is to rewrite the user's subsequent questions into independent, complete questions that can be understood independently from the conversation context.\n\nRewriting Rules:\n1. Resolve pronoun references (such as \"it\", \"this\", \"they\", etc.)\n2. Complete omitted subjects or objects\n3. Keep the core intent of the original question unchanged\n4. The rewritten question should be concise and clear\n\nOnly output the rewritten question, do not output other content."
+      },
+      strict_rewrite_system: {
+        name: "엄격한 재작성",
+        desc: "완전하고 독립적인 질문에 대한 더 엄격한 요구 사항",
+        content: "You are a question rewriting expert. Please rewrite user questions into complete, independent questions.\n\nStrict Requirements:\n1. All pronouns and references must be resolved\n2. All omitted content must be completed\n3. The original question intent must not be changed\n4. Content not in the original question must not be added\n5. The rewritten result must be a question\n\nDirectly output the rewritten question without any explanation."
+      },
+    },
+    rewriteUser: {
+      default_rewrite_user: {
+        name: "표준 형식",
+        desc: "대화 기록 및 현재 질문이 포함된 표준 형식",
+        content: "## History Dialogue Background\n{{conversation}}\n\n## User Question Needs to be Rewritten\n{{query}}\n\n## Rewritten Question"
+      },
+      detailed_rewrite_user: {
+        name: "상세 형식",
+        desc: "작업 지침이 포함된 상세 형식",
+        content: "## History Dialogue Background\nBelow is the dialogue history between the user and the assistant, please read carefully to understand the context:\n\n{{conversation}}\n\n## Current User Question\n{{query}}\n\n## Task Requirements\nBased on the above dialogue history, please rewrite the current question into an independent, complete question that can be understood outside of the context.\n\n## Rewritten Question"
+      },
+    },
+    fallback: {
+      default_fallback: {
+        name: "표준 대체 응답",
+        desc: "답변을 찾을 수 없을 때의 표준 제안 메시지",
+        content: "Sorry, I didn't find any content directly related to your question in the knowledge base.\n\nYou can try:\n1. Describe your question in another way\n2. Provide more specific information\n3. Consult professionals in relevant fields\n\nIf you have other questions, I am happy to continue serving you."
+      },
+      polite_fallback: {
+        name: "정중한 대체 응답",
+        desc: "더 정중하고 상세한 답변 불가 메시지",
+        content: "I'm very sorry, but I currently cannot provide an accurate answer to this question. This may be because:\n- The question is outside my knowledge scope\n- There is no relevant content in the knowledge base for now\n\nI suggest you:\n1. Try asking again with different keywords\n2. Break the question into more specific small questions\n3. Contact manual customer service for help\n\nThank you for your understanding, I look forward to helping you with other questions!"
+      },
+      brief_fallback: {
+        name: "간결한 대체 응답",
+        desc: "짧은 답변 불가 메시지",
+        content: "Sorry, I temporarily cannot answer this question. Please try asking in another way, or contact manual customer service."
+      },
+      model_fallback: {
+        name: "모델 생성 대체 응답",
+        desc: "모델이 일반 지식으로 답변하도록 유도하는 프롬프트",
+        content: "No content directly related to the user's question was found in the knowledge base. Please help users answer questions as much as possible based on your general knowledge.\n\nNotes:\n1. Clearly inform users that this is an answer based on general knowledge, not knowledge base content\n2. If the question involves specific fields or requires the latest information, it is recommended that users consult official materials\n3. Maintain the accuracy and objectivity of the answer\n\nUser Question: {{query}}"
+      },
+    },
   },
   tenant: {
     title: "테넌트 정보",

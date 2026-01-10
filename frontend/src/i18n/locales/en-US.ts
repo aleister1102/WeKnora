@@ -232,14 +232,34 @@ export default {
       list_chunks: 'List Chunks'
     },
     summary: {
-      searchCount: 'Searched knowledge base <strong>{count}</strong> times',
-      thinkingCount: 'Thought <strong>{count}</strong> times',
-      callTool: 'Called {name}',
-      callTools: 'Called tools {names}',
-      intermediateSteps: '<strong>{count}</strong> intermediate steps',
-      separator: ', ',
-      lastSeparator: ', '
+      searchedKnowledge: 'Searched knowledge base <strong>{count}</strong> time(s)',
+      thoughtTimes: 'Thought <strong>{count}</strong> time(s)',
+      calledTool: 'Called {tool}',
+      calledTools: 'Called tools {tools}',
+      intermediateSteps: '<strong>{count}</strong> intermediate step(s)'
     },
+    callingTool: 'Calling {tool}...',
+    toolCallFailed: '{tool} failed',
+    toolTitleWithQuery: '{title}: 「{query}」',
+    noResultsFound: 'No matching content found',
+    searchResultsWithFiles: 'Found <strong>{count}</strong> result(s) from <strong>{fileCount}</strong> file(s)',
+    searchResults: 'Found <strong>{count}</strong> result(s)',
+    grepResultsWithLimit: 'Found <strong>{total}</strong> match(es) (showing <strong>{shown}</strong>)',
+    grepResults: 'Found <strong>{count}</strong> match(es)',
+    planStatus: {
+      inProgress: '🚀 In Progress {count}',
+      pending: '📋 Pending {count}',
+      completed: '✅ Completed {count}'
+    },
+    planStatusLabel: {
+      inProgress: 'In Progress',
+      pending: 'Pending',
+      completed: 'Completed'
+    },
+    deepThinking: 'Deep Thinking',
+    gotDocument: 'Got document: {title}',
+    viewedChunks: 'Viewed {fetched}/{total} chunk(s) of {title}',
+    document: 'Document',
     status: {
       inProgress: 'In Progress',
       pending: 'Pending',
@@ -550,6 +570,36 @@ export default {
         description: 'Focused on document retrieval and content organization, capable of quickly locating documents, extracting key information and generating summaries',
       },
     },
+    placeholders: {
+      query: {
+        label: 'User Query',
+        description: 'Current user query or question'
+      },
+      contexts: {
+        label: 'Knowledge Context',
+        description: 'Retrieved content from knowledge base'
+      },
+      current_time: {
+        label: 'Current Time',
+        description: 'Current system date and time'
+      },
+      history: {
+        label: 'Conversation History',
+        description: 'Previous messages in the conversation'
+      },
+      knowledge_bases: {
+        label: 'Knowledge Bases',
+        description: 'List of available knowledge bases and their descriptions'
+      },
+      web_search_status: {
+        label: 'Web Search Status',
+        description: 'Dynamic web search status and instructions'
+      },
+      conversation: {
+        label: 'Conversation history',
+        description: 'Previous messages in the conversation'
+      }
+    }
   },
   settings: {
     title: 'Settings',
@@ -979,6 +1029,8 @@ export default {
     upload: 'Upload',
     download: 'Download',
     refresh: 'Refresh',
+    separator: ', ',
+    comma: ', ',
     loading: 'Loading...',
     noData: 'No data',
     noMoreData: 'All content loaded',
@@ -2386,90 +2438,109 @@ export default {
     }
   },
   promptTemplate: {
+    noTemplates: 'No templates',
     selectTemplate: 'Select Template',
     useTemplate: 'Use Template',
     withKnowledgeBase: 'KB',
     withWebSearch: 'Web Search',
     systemPrompt: {
-      defaultKB: {
+      default_kb: {
         name: 'Knowledge Base Assistant',
-        desc: 'Basic knowledge base Q&A template for most scenarios',
+        desc: 'Basic KB Q&A template, suitable for most scenarios',
+        content: "You are a professional knowledge base Q&A assistant. Please answer user questions based on the provided reference materials.\n\nRequirements:\n1. Answer only based on reference materials, do not make up information.\n2. If reference materials are insufficient to answer the question, please clearly inform the user.\n3. The answer should be accurate, concise, and professional.\n4. Appropriately cite sources to enhance credibility.\n\nCurrent Time: {{current_time}}"
       },
-      expert: {
-        name: 'Domain Expert',
-        desc: 'Professional and in-depth answers for technical domains',
+      expert_assistant: {
+        name: 'Domain Expert Assistant',
+        desc: 'Professional and in-depth style, suitable for technical or specialized fields',
+        content: "You are a senior domain expert assistant with rich professional knowledge and practical experience.\n\nCore Responsibilities:\n1. Deeply analyze user questions and provide professional, comprehensive answers.\n2. Combine knowledge base content to give evidence-based suggestions.\n3. Provide multi-angle analysis and weigh pros and cons when necessary.\n4. Explain professional concepts in simple, easy-to-understand language.\n\nAnswer Style:\n- Clear structure, rigorous logic.\n- Highlight key points, distinct levels.\n- Strong practicality, high operability.\n\nCurrent Time: {{current_time}}"
       },
-      customerService: {
-        name: 'Customer Service',
-        desc: 'Friendly and warm service style for customer support',
+      customer_service: {
+        name: 'Customer Service Assistant',
+        desc: 'Friendly and enthusiastic service style, suitable for customer service scenarios',
+        content: "You are a professional and friendly customer service assistant, dedicated to providing a quality service experience for users.\n\nService Principles:\n1. Enthusiastic and friendly attitude, polite and appropriate language.\n2. Accurately understand user needs and provide targeted answers.\n3. Answer based on knowledge base content to ensure accurate information.\n4. Guide users to other help channels for questions that cannot be answered.\n\nAnswer Requirements:\n- Cordial and natural tone, avoid mechanical and stiff expression.\n- Concise and clear answers, highlight key points.\n- Proactively provide relevant information when necessary.\n\nCurrent Time: {{current_time}}"
       },
-      techSupport: {
+      technical_support: {
         name: 'Technical Support',
-        desc: 'Professional technical problem solving with code examples',
+        desc: 'Professional technical problem solving, including code examples',
+        content: "You are a professional technical support engineer, responsible for answering technical related questions.\n\nResponsibilities:\n1. Accurately diagnose technical problems encountered by users.\n2. Provide clear, executable solutions.\n3. Provide code examples or operation steps when necessary.\n4. Explain technical principles to help users understand.\n\nAnswer Standards:\n- Accurate technical terms, clear explanations.\n- Detailed steps, easy to operate.\n- Standard code examples, complete comments.\n- Consider different scenarios and boundary cases.\n\nCurrent Time: {{current_time}}"
       },
-      pureChat: {
-        name: 'General Chat',
-        desc: 'General conversation assistant without knowledge base',
+      pure_chat: {
+        name: 'General Conversation',
+        desc: 'General conversation assistant that does not depend on a knowledge base',
+        content: "You are an intelligent dialogue assistant who can engage in natural and smooth conversations with users.\n\nFeatures:\n1. Understand user intent and provide helpful answers.\n2. Extensive knowledge, can discuss multiple topics.\n3. Accurate, objective, and insightful answers.\n4. Natural language, full of affinity.\n\nCurrent Time: {{current_time}}"
       },
-      webSearch: {
+      web_search_assistant: {
         name: 'Web Search Assistant',
-        desc: 'Combines web search for up-to-date information',
+        desc: 'Combined with web search to get the latest information',
+        content: "You are an intelligent assistant with web search capabilities, which can obtain the latest information to answer questions.\n\nWorking Method:\n1. Combine web search results and knowledge base content to answer questions.\n2. Prioritize using the latest and most authoritative information sources.\n3. Clearly mark information sources for easy user verification.\n4. For questions with high timeliness, prioritize search results.\n\nNotes:\n- Distinguish between facts and opinions.\n- Compare multiple sources to provide a comprehensive perspective.\n- Mark the timeliness of information.\n\nCurrent Time: {{current_time}}"
       },
     },
     contextTemplate: {
-      default: {
+      default_context: {
         name: 'Standard Template',
         desc: 'Basic context template with clear references and questions',
+        content: "Please answer user questions based on the following reference materials.\n\nReference Materials:\n{{contexts}}\n\nUser Question: {{query}}\n\nPlease answer based on the above reference materials. If the reference materials are insufficient to answer the question, please clearly inform the user."
       },
-      detailed: {
+      detailed_context: {
         name: 'Detailed Template',
         desc: 'Complete template with detailed instructions and requirements',
+        content: "## Task Description\nPlease answer the user's questions accurately and comprehensively based on the provided reference materials.\n\n## Reference Materials\n{{contexts}}\n\n## User Question\n{{query}}\n\n## Answer Requirements\n1. Answer only based on reference materials, do not make up information\n2. If multiple materials conflict, please conduct a comprehensive analysis\n3. Appropriately cite sources to enhance credibility\n4. If materials are insufficient, please clearly state so\n\nCurrent Time: {{current_time}} {{current_week}}"
       },
-      simple: {
+      simple_context: {
         name: 'Simple Template',
         desc: 'Minimal template format for simple Q&A scenarios',
+        content: "Reference Materials:\n{{contexts}}\n\nQuestion: {{query}}\n\nPlease answer the above question."
       },
-      qa: {
+      qa_context: {
         name: 'Q&A Template',
         desc: 'Optimized template for Q&A scenarios',
+        content: "You need to answer a question. Below are potentially relevant materials:\n\n{{contexts}}\n\nUser Question is: {{query}}\n\nPlease answer the question based on the above materials. Answer requirements:\n- Answer the question directly, do not repeat the question\n- If there is no relevant information in the materials, please explain\n- Keep answers concise and accurate"
       },
     },
     rewriteSystem: {
-      default: {
+      default_rewrite_system: {
         name: 'Standard Rewrite',
         desc: 'Standard rules for resolving references and completing omissions',
+        content: "You are a professional question rewriting assistant. Your task is to rewrite the user's subsequent questions into independent, complete questions that can be understood independently from the conversation context.\n\nRewriting Rules:\n1. Resolve pronoun references (such as \"it\", \"this\", \"they\", etc.)\n2. Complete omitted subjects or objects\n3. Keep the core intent of the original question unchanged\n4. The rewritten question should be concise and clear\n\nOnly output the rewritten question, do not output other content."
       },
-      strict: {
+      strict_rewrite_system: {
         name: 'Strict Rewrite',
         desc: 'Stricter requirements for complete and independent questions',
+        content: "You are a question rewriting expert. Please rewrite user questions into complete, independent questions.\n\nStrict Requirements:\n1. All pronouns and references must be resolved\n2. All omitted content must be completed\n3. The original question intent must not be changed\n4. Content not in the original question must not be added\n5. The rewritten result must be a question\n\nDirectly output the rewritten question without any explanation."
       },
     },
     rewriteUser: {
-      default: {
+      default_rewrite_user: {
         name: 'Standard Format',
         desc: 'Standard format with conversation history and current question',
+        content: "## History Dialogue Background\n{{conversation}}\n\n## User Question Needs to be Rewritten\n{{query}}\n\n## Rewritten Question"
       },
-      detailed: {
+      detailed_rewrite_user: {
         name: 'Detailed Format',
         desc: 'Detailed format with task instructions',
+        content: "## History Dialogue Background\nBelow is the dialogue history between the user and the assistant, please read carefully to understand the context:\n\n{{conversation}}\n\n## Current User Question\n{{query}}\n\n## Task Requirements\nBased on the above dialogue history, please rewrite the current question into an independent, complete question that can be understood outside of the context.\n\n## Rewritten Question"
       },
     },
     fallback: {
-      default: {
+      default_fallback: {
         name: 'Standard Fallback',
         desc: 'Friendly message with suggestions when unable to answer',
+        content: "Sorry, I didn't find any content directly related to your question in the knowledge base.\n\nYou can try:\n1. Describe your question in another way\n2. Provide more specific information\n3. Consult professionals in relevant fields\n\nIf you have other questions, I am happy to continue serving you."
       },
-      polite: {
+      polite_fallback: {
         name: 'Polite Fallback',
         desc: 'More polite and detailed unable-to-answer message',
+        content: "I'm very sorry, but I currently cannot provide an accurate answer to this question. This may be because:\n- The question is outside my knowledge scope\n- There is no relevant content in the knowledge base for now\n\nI suggest you:\n1. Try asking again with different keywords\n2. Break the question into more specific small questions\n3. Contact manual customer service for help\n\nThank you for your understanding, I look forward to helping you with other questions!"
       },
-      brief: {
+      brief_fallback: {
         name: 'Brief Fallback',
         desc: 'Short unable-to-answer message',
+        content: "Sorry, I temporarily cannot answer this question. Please try asking in another way, or contact manual customer service."
       },
-      model: {
+      model_fallback: {
         name: 'Model Fallback Prompt',
         desc: 'Prompt to guide model to answer with general knowledge',
+        content: "No content directly related to the user's question was found in the knowledge base. Please help users answer questions as much as possible based on your general knowledge.\n\nNotes:\n1. Clearly inform users that this is an answer based on general knowledge, not knowledge base content\n2. If the question involves specific fields or requires the latest information, it is recommended that users consult official materials\n3. Maintain the accuracy and objectivity of the answer\n\nUser Question: {{query}}"
       },
     },
   },

@@ -997,144 +997,146 @@ async function createNewSession(value: string): Promise<void> {
               </template>
             </t-input>
           </div>
-          <t-loading :loading="tagLoading" size="small">
-            <div class="tag-list">
-              <div v-if="creatingTag" class="tag-list-item tag-editing" @click.stop>
-                <div class="tag-list-left">
-                  <t-icon name="folder" size="18px" />
-                  <div class="tag-edit-input">
-                    <t-input
-                      ref="newTagInputRef"
-                      v-model="newTagName"
-                      size="small"
-                      :maxlength="40"
-                      :placeholder="$t('knowledgeBase.tagNamePlaceholder')"
-                      @keydown.enter.stop.prevent="submitCreateTag"
-                      @keydown.esc.stop.prevent="cancelCreateTag"
-                    />
-                  </div>
-                </div>
-                <div class="tag-inline-actions">
-                  <t-button
-                    variant="text"
-                    theme="default"
-                    size="small"
-                    class="tag-action-btn confirm"
-                    :loading="creatingTagLoading"
-                    @click.stop="submitCreateTag"
-                  >
-                    <t-icon name="check" size="16px" />
-                  </t-button>
-                  <t-button
-                    variant="text"
-                    theme="default"
-                    size="small"
-                    class="tag-action-btn cancel"
-                    @click.stop="cancelCreateTag"
-                  >
-                    <t-icon name="close" size="16px" />
-                  </t-button>
-                </div>
-              </div>
-
-              <template v-if="filteredTags.length">
-                <div
-                  v-for="tag in filteredTags"
-                  :key="tag.id"
-                  class="tag-list-item"
-                  :class="{ active: selectedTagId === tag.id, editing: editingTagId === tag.id && tag.id !== UNTAGGED_TAG_ID }"
-                  @click="tag.id === UNTAGGED_TAG_ID ? handleUntaggedClick() : handleTagRowClick(tag.id)"
-                >
+          <div class="tag-list-scroll">
+            <t-loading :loading="tagLoading" size="small">
+              <div class="tag-list">
+                <div v-if="creatingTag" class="tag-list-item tag-editing" @click.stop>
                   <div class="tag-list-left">
                     <t-icon name="folder" size="18px" />
-                    <!-- Untagged pseudo-tag: show translated name, no editing -->
-                    <template v-if="tag.id === UNTAGGED_TAG_ID">
-                      <span class="tag-name">{{ $t('knowledgeBase.untagged') }}</span>
-                    </template>
-                    <template v-else-if="editingTagId === tag.id">
-                      <div class="tag-edit-input" @click.stop>
-                        <t-input
-                          :ref="setEditingTagInputRefByTag(tag.id)"
-                          v-model="editingTagName"
-                          size="small"
-                          :maxlength="40"
-                          @keydown.enter.stop.prevent="submitEditTag"
-                          @keydown.esc.stop.prevent="cancelEditTag"
-                        />
-                      </div>
-                    </template>
-                    <template v-else>
-                      <span class="tag-name" :title="tag.name">{{ tag.name }}</span>
-                    </template>
+                    <div class="tag-edit-input">
+                      <t-input
+                        ref="newTagInputRef"
+                        v-model="newTagName"
+                        size="small"
+                        :maxlength="40"
+                        :placeholder="$t('knowledgeBase.tagNamePlaceholder')"
+                        @keydown.enter.stop.prevent="submitCreateTag"
+                        @keydown.esc.stop.prevent="cancelCreateTag"
+                      />
+                    </div>
                   </div>
-                  <div class="tag-list-right">
-                    <span class="tag-count">{{ tag.knowledge_count || 0 }}</span>
-                    <!-- Untagged pseudo-tag: no edit/delete actions -->
-                    <template v-if="tag.id === UNTAGGED_TAG_ID">
-                      <!-- Empty placeholder for alignment -->
-                    </template>
-                    <template v-else-if="editingTagId === tag.id">
-                      <div class="tag-inline-actions" @click.stop>
-                        <t-button
-                          variant="text"
-                          theme="default"
-                          size="small"
-                          class="tag-action-btn confirm"
-                          :loading="editingTagSubmitting"
-                          @click.stop="submitEditTag"
-                        >
-                          <t-icon name="check" size="16px" />
-                        </t-button>
-                        <t-button
-                          variant="text"
-                          theme="default"
-                          size="small"
-                          class="tag-action-btn cancel"
-                          @click.stop="cancelEditTag"
-                        >
-                          <t-icon name="close" size="16px" />
-                        </t-button>
-                      </div>
-                    </template>
-                    <template v-else>
-                      <div class="tag-more" @click.stop>
-                        <t-popup trigger="click" placement="top-right" overlayClassName="tag-more-popup">
-                          <div class="tag-more-btn">
-                            <t-icon name="more" size="14px" />
-                          </div>
-                          <template #content>
-                            <div class="tag-menu">
-                              <div class="tag-menu-item" @click="startEditTag(tag)">
-                                <t-icon class="menu-icon" name="edit" />
-                                <span>{{ $t('knowledgeBase.tagEditAction') }}</span>
-                              </div>
-                              <div class="tag-menu-item danger" @click="confirmDeleteTag(tag)">
-                                <t-icon class="menu-icon" name="delete" />
-                                <span>{{ $t('knowledgeBase.tagDeleteAction') }}</span>
-                              </div>
-                            </div>
-                          </template>
-                        </t-popup>
-                      </div>
-                    </template>
+                  <div class="tag-inline-actions">
+                    <t-button
+                      variant="text"
+                      theme="default"
+                      size="small"
+                      class="tag-action-btn confirm"
+                      :loading="creatingTagLoading"
+                      @click.stop="submitCreateTag"
+                    >
+                      <t-icon name="check" size="16px" />
+                    </t-button>
+                    <t-button
+                      variant="text"
+                      theme="default"
+                      size="small"
+                      class="tag-action-btn cancel"
+                      @click.stop="cancelCreateTag"
+                    >
+                      <t-icon name="close" size="16px" />
+                    </t-button>
                   </div>
                 </div>
-              </template>
-              <div v-else class="tag-empty-state">
-                {{ $t('knowledgeBase.tagEmptyResult') }}
+
+                <template v-if="filteredTags.length">
+                  <div
+                    v-for="tag in filteredTags"
+                    :key="tag.id"
+                    class="tag-list-item"
+                    :class="{ active: selectedTagId === tag.id, editing: editingTagId === tag.id && tag.id !== UNTAGGED_TAG_ID }"
+                    @click="tag.id === UNTAGGED_TAG_ID ? handleUntaggedClick() : handleTagRowClick(tag.id)"
+                  >
+                    <div class="tag-list-left">
+                      <t-icon name="folder" size="18px" />
+                      <!-- Untagged pseudo-tag: show translated name, no editing -->
+                      <template v-if="tag.id === UNTAGGED_TAG_ID">
+                        <span class="tag-name">{{ $t('knowledgeBase.untagged') }}</span>
+                      </template>
+                      <template v-else-if="editingTagId === tag.id">
+                        <div class="tag-edit-input" @click.stop>
+                          <t-input
+                            :ref="setEditingTagInputRefByTag(tag.id)"
+                            v-model="editingTagName"
+                            size="small"
+                            :maxlength="40"
+                            @keydown.enter.stop.prevent="submitEditTag"
+                            @keydown.esc.stop.prevent="cancelEditTag"
+                          />
+                        </div>
+                      </template>
+                      <template v-else>
+                        <span class="tag-name" :title="tag.name">{{ tag.name }}</span>
+                      </template>
+                    </div>
+                    <div class="tag-list-right">
+                      <span class="tag-count">{{ tag.knowledge_count || 0 }}</span>
+                      <!-- Untagged pseudo-tag: no edit/delete actions -->
+                      <template v-if="tag.id === UNTAGGED_TAG_ID">
+                        <!-- Empty placeholder for alignment -->
+                      </template>
+                      <template v-else-if="editingTagId === tag.id">
+                        <div class="tag-inline-actions" @click.stop>
+                          <t-button
+                            variant="text"
+                            theme="default"
+                            size="small"
+                            class="tag-action-btn confirm"
+                            :loading="editingTagSubmitting"
+                            @click.stop="submitEditTag"
+                          >
+                            <t-icon name="check" size="16px" />
+                          </t-button>
+                          <t-button
+                            variant="text"
+                            theme="default"
+                            size="small"
+                            class="tag-action-btn cancel"
+                            @click.stop="cancelEditTag"
+                          >
+                            <t-icon name="close" size="16px" />
+                          </t-button>
+                        </div>
+                      </template>
+                      <template v-else>
+                        <div class="tag-more" @click.stop>
+                          <t-popup trigger="click" placement="top-right" overlayClassName="tag-more-popup">
+                            <div class="tag-more-btn">
+                              <t-icon name="more" size="14px" />
+                            </div>
+                            <template #content>
+                              <div class="tag-menu">
+                                <div class="tag-menu-item" @click="startEditTag(tag)">
+                                  <t-icon class="menu-icon" name="edit" />
+                                  <span>{{ $t('knowledgeBase.tagEditAction') }}</span>
+                                </div>
+                                <div class="tag-menu-item danger" @click="confirmDeleteTag(tag)">
+                                  <t-icon class="menu-icon" name="delete" />
+                                  <span>{{ $t('knowledgeBase.tagDeleteAction') }}</span>
+                                </div>
+                              </div>
+                            </template>
+                          </t-popup>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </template>
+                <div v-else class="tag-empty-state">
+                  {{ $t('knowledgeBase.tagEmptyResult') }}
+                </div>
+                <div v-if="tagHasMore" class="tag-load-more">
+                  <t-button
+                    variant="text"
+                    size="small"
+                    :loading="tagLoadingMore"
+                    @click.stop="kbId && loadTags(kbId)"
+                  >
+                    {{ $t('tenant.loadMore') }}
+                  </t-button>
+                </div>
               </div>
-              <div v-if="tagHasMore" class="tag-load-more">
-                <t-button
-                  variant="text"
-                  size="small"
-                  :loading="tagLoadingMore"
-                  @click.stop="kbId && loadTags(kbId)"
-                >
-                  {{ $t('tenant.loadMore') }}
-                </t-button>
-              </div>
-            </div>
-          </t-loading>
+            </t-loading>
+          </div>
         </aside>
         <div class="tag-content">
           <div class="doc-card-area">
@@ -1452,6 +1454,7 @@ async function createNewSession(value: string): Promise<void> {
   flex-shrink: 0;
   max-height: 100%;
   min-height: 0;
+  overflow: hidden;
 
   .sidebar-header {
     display: flex;
@@ -1514,13 +1517,39 @@ async function createNewSession(value: string): Promise<void> {
     }
   }
 
+  .tag-list-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    // Scrollbar styling
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #d9d9d9;
+      border-radius: 3px;
+
+      &:hover {
+        background: #bfbfbf;
+      }
+    }
+
+    // Firefox scrollbar
+    scrollbar-width: thin;
+    scrollbar-color: #d9d9d9 transparent;
+  }
+
   .tag-list {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
 
     .tag-load-more {
       padding: 8px 0 0;

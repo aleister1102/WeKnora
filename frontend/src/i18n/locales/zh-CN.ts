@@ -736,6 +736,8 @@ export default {
     upload: "上传",
     download: "下载",
     refresh: "刷新",
+    separator: "、",
+    comma: "，",
     loading: "加载中...",
     noData: "暂无数据",
     noMoreData: "已加载全部内容",
@@ -793,14 +795,34 @@ export default {
       list_chunks: '查看知识分块'
     },
     summary: {
-      searchCount: '检索知识库 <strong>{count}</strong> 次',
-      thinkingCount: '思考 <strong>{count}</strong> 次',
-      callTool: '调用 {name}',
-      callTools: '调用工具 {names}',
-      intermediateSteps: '<strong>{count}</strong> 个中间步骤',
-      separator: '，',
-      lastSeparator: '，'
+      searchedKnowledge: '检索知识库 <strong>{count}</strong> 次',
+      thoughtTimes: '思考 <strong>{count}</strong> 次',
+      calledTool: '调用 {tool}',
+      calledTools: '调用工具 {tools}',
+      intermediateSteps: '<strong>{count}</strong> 个中间步骤'
     },
+    callingTool: '正在调用 {tool}...',
+    toolCallFailed: '{tool} 失败',
+    toolTitleWithQuery: '{title}：「{query}」',
+    noResultsFound: '未找到匹配的内容',
+    searchResultsWithFiles: '找到 <strong>{count}</strong> 个结果，来自 <strong>{fileCount}</strong> 个文件',
+    searchResults: '找到 <strong>{count}</strong> 个结果',
+    grepResultsWithLimit: '找到 <strong>{total}</strong> 处匹配（显示 <strong>{shown}</strong> 个）',
+    grepResults: '找到 <strong>{count}</strong> 处匹配',
+    planStatus: {
+      inProgress: '🚀 进行中 {count}',
+      pending: '📋 待处理 {count}',
+      completed: '✅ 已完成 {count}'
+    },
+    planStatusLabel: {
+      inProgress: '进行中',
+      pending: '待处理',
+      completed: '已完成'
+    },
+    deepThinking: '深度思考',
+    gotDocument: '获取文档：{title}',
+    viewedChunks: '查看 {title} 的 {fetched}/{total} 个分块',
+    document: '文档',
     status: {
       inProgress: '进行中',
       pending: '待处理',
@@ -1111,6 +1133,44 @@ export default {
         description: "专注于文档检索和内容整理，能够快速定位文档、提取关键信息并生成摘要",
       },
     },
+    placeholders: {
+      query: {
+        label: "用户问题",
+        description: "用户当前的问题或查询内容"
+      },
+      contexts: {
+        label: "检索内容",
+        description: "从知识库检索到的相关内容列表"
+      },
+      current_time: {
+        label: "当前时间",
+        description: "当前系统时间（格式：2006-01-02 15:04:05）"
+      },
+      current_week: {
+        label: "当前星期",
+        description: "当前星期几（如：星期一、Monday）"
+      },
+      conversation: {
+        label: "历史对话",
+        description: "格式化的历史对话内容，用于多轮对话改写"
+      },
+      yesterday: {
+        label: "昨天日期",
+        description: "昨天的日期（格式：2006-01-02）"
+      },
+      answer: {
+        label: "助手回答",
+        description: "助手的回答内容（用于对话历史格式化）"
+      },
+      knowledge_bases: {
+        label: "知识库列表",
+        description: "自动格式化的知识库列表，包含名称、描述、文档数量等信息"
+      },
+      web_search_status: {
+        label: "网络搜索状态",
+        description: "网络搜索工具是否启用的状态（Enabled 或 Disabled）"
+      }
+    }
   },
   file: {
     upload: "上传文件",
@@ -2396,85 +2456,103 @@ export default {
     withKnowledgeBase: "知识库",
     withWebSearch: "网络搜索",
     systemPrompt: {
-      defaultKB: {
+      default_kb: {
         name: "知识库问答助手",
         desc: "基础的知识库问答模板，适用于大多数场景",
+        content: "你是一个专业的知识库问答助手。请根据提供的参考资料回答用户问题。\n\n要求：\n1. 仅基于参考资料回答，不要编造信息\n2. 如果参考资料不足以回答问题，请明确告知用户\n3. 回答要准确、简洁、专业\n4. 适当引用来源，增强可信度\n\n当前时间：{{current_time}}"
       },
-      expert: {
+      expert_assistant: {
         name: "领域专家助手",
         desc: "专业深入的解答风格，适合技术或专业领域",
+        content: "你是一位资深的领域专家助手，拥有丰富的专业知识和实践经验。\n\n核心职责：\n1. 深入分析用户问题，提供专业、全面的解答\n2. 结合知识库内容，给出有据可依的建议\n3. 必要时提供多角度分析和权衡利弊\n4. 用通俗易懂的语言解释专业概念\n\n回答风格：\n- 条理清晰，逻辑严谨\n- 重点突出，层次分明\n- 实用性强，可操作性高\n\n当前时间：{{current_time}}"
       },
-      customerService: {
+      customer_service: {
         name: "客服助手",
         desc: "友善热情的服务风格，适合客户服务场景",
+        content: "你是一位专业、友善的客服助手，致力于为用户提供优质的服务体验。\n\n服务准则：\n1. 态度热情友好，用语礼貌得体\n2. 准确理解用户需求，提供针对性解答\n3. 基于知识库内容回答，确保信息准确\n4. 遇到无法解答的问题，引导用户寻求其他帮助渠道\n\n回答要求：\n- 语气亲切自然，避免机械生硬\n- 回答简洁明了，重点突出\n- 必要时主动提供相关信息\n\n当前时间：{{current_time}}"
       },
-      techSupport: {
+      technical_support: {
         name: "技术支持",
         desc: "专业的技术问题解答，包含代码示例",
+        content: "你是一位专业的技术支持工程师，负责解答技术相关问题。\n\n工作职责：\n1. 准确诊断用户遇到的技术问题\n2. 提供清晰、可执行的解决方案\n3. 必要时提供代码示例或操作步骤\n4. 解释技术原理，帮助用户理解\n\n回答规范：\n- 技术术语准确，解释清晰\n- 步骤详细，便于操作\n- 代码示例规范，注释完整\n- 考虑不同场景和边界情况\n\n当前时间：{{current_time}}"
       },
-      pureChat: {
+      pure_chat: {
         name: "通用对话",
         desc: "不依赖知识库的通用对话助手",
+        content: "你是一个智能对话助手，可以与用户进行自然流畅的对话。\n\n特点：\n1. 理解用户意图，提供有帮助的回答\n2. 知识广泛，可以讨论多种话题\n3. 回答准确、客观、有见地\n4. 语言自然，富有亲和力\n\n当前时间：{{current_time}}"
       },
-      webSearch: {
+      web_search_assistant: {
         name: "网络搜索助手",
         desc: "结合网络搜索获取最新信息",
+        content: "你是一个具备网络搜索能力的智能助手，可以获取最新信息来回答问题。\n\n工作方式：\n1. 结合网络搜索结果和知识库内容回答问题\n2. 优先使用最新、最权威的信息来源\n3. 明确标注信息来源，便于用户验证\n4. 对于时效性强的问题，优先参考搜索结果\n\n注意事项：\n- 区分事实和观点\n- 对比多个来源，提供全面视角\n- 标注信息的时效性\n\n当前时间：{{current_time}}"
       },
     },
     contextTemplate: {
-      default: {
+      default_context: {
         name: "标准模板",
         desc: "基础的上下文模板，清晰展示参考资料和问题",
+        content: "请根据以下参考资料回答用户问题。\n\n参考资料：\n{{contexts}}\n\n用户问题：{{query}}\n\n请基于上述参考资料进行回答。如果参考资料不足以回答问题，请明确告知。"
       },
-      detailed: {
+      detailed_context: {
         name: "详细模板",
         desc: "包含详细说明和回答要求的完整模板",
+        content: "## 任务说明\n请根据提供的参考资料，准确、全面地回答用户问题。\n\n## 参考资料\n{{contexts}}\n\n## 用户问题\n{{query}}\n\n## 回答要求\n1. 仅基于参考资料回答，不要编造信息\n2. 如果多个资料有冲突，请综合分析\n3. 适当引用来源，增强可信度\n4. 如果资料不足，请明确说明\n\n当前时间：{{current_time}} {{current_week}}"
       },
-      simple: {
+      simple_context: {
         name: "简洁模板",
         desc: "精简的模板格式，适合简单问答场景",
+        content: "参考资料：\n{{contexts}}\n\n问题：{{query}}\n\n请回答上述问题。"
       },
-      qa: {
+      qa_context: {
         name: "问答模板",
         desc: "针对问答场景优化的模板",
+        content: "你需要回答一个问题。以下是可能相关的资料：\n\n{{contexts}}\n\n用户的问题是：{{query}}\n\n请基于以上资料回答问题。回答要求：\n- 直接回答问题，不要重复问题\n- 如果资料中没有相关信息，请说明\n- 保持回答简洁准确"
       },
     },
     rewriteSystem: {
-      default: {
+      default_rewrite_system: {
         name: "标准改写",
         desc: "消解指代、补全省略的标准改写规则",
+        content: "你是一个专业的问题改写助手。你的任务是将用户的后续问题改写为独立、完整的问题，使其可以脱离对话上下文独立理解。\n\n改写规则：\n1. 消解代词指代（如\"它\"、\"这个\"、\"他们\"等）\n2. 补全省略的主语或宾语\n3. 保持原问题的核心意图不变\n4. 改写后的问题应该简洁清晰\n\n只输出改写后的问题，不要输出其他内容。"
       },
-      strict: {
+      strict_rewrite_system: {
         name: "严格改写",
         desc: "更严格的改写要求，确保问题完整独立",
+        content: "你是问题改写专家。请将用户问题改写为完整、独立的问题。\n\n严格要求：\n1. 必须消解所有代词和指代\n2. 必须补全所有省略内容\n3. 不得改变原问题意图\n4. 不得添加原问题没有的内容\n5. 改写结果必须是一个问句\n\n直接输出改写后的问题，不要有任何解释。"
       },
     },
     rewriteUser: {
-      default: {
+      default_rewrite_user: {
         name: "标准格式",
         desc: "包含对话历史和当前问题的标准格式",
+        content: "## 历史对话背景\n{{conversation}}\n\n## 需要改写的用户问题\n{{query}}\n\n## 改写后的问题"
       },
-      detailed: {
+      detailed_rewrite_user: {
         name: "详细格式",
         desc: "带有任务说明的详细格式",
+        content: "## 历史对话背景\n以下是用户与助手的对话历史，请仔细阅读以理解上下文：\n\n{{conversation}}\n\n## 当前用户问题\n{{query}}\n\n## 任务要求\n请根据以上对话历史，将当前问题改写为一个独立、完整、可以脱离上下文理解的问题。\n\n## 改写后的问题"
       },
     },
     fallback: {
-      default: {
+      default_fallback: {
         name: "标准兜底",
         desc: "友好告知无法回答并提供建议",
+        content: "抱歉，我在知识库中没有找到与您问题直接相关的内容。\n\n您可以尝试：\n1. 换一种方式描述您的问题\n2. 提供更多具体信息\n3. 咨询相关领域的专业人员\n\n如果您有其他问题，我很乐意继续为您服务。"
       },
-      polite: {
+      polite_fallback: {
         name: "礼貌兜底",
         desc: "更加礼貌详细的无法回答提示",
+        content: "非常抱歉，目前我无法为您提供这个问题的准确答案。这可能是因为：\n- 该问题超出了我的知识范围\n- 知识库中暂无相关内容\n\n建议您：\n1. 尝试用不同的关键词重新提问\n2. 将问题拆分为更具体的小问题\n3. 联系人工客服获取帮助\n\n感谢您的理解，期待能在其他问题上帮助到您！"
       },
-      brief: {
+      brief_fallback: {
         name: "简洁兜底",
         desc: "简短的无法回答提示",
+        content: "抱歉，我暂时无法回答这个问题。请尝试换一种方式提问，或联系人工客服。"
       },
-      model: {
+      model_fallback: {
         name: "模型兜底提示",
-        desc: "引导模型基于通用知识回答的提示词",
+        desc: "引导 model 基于通用知识回答的提示词",
+        content: "知识库中没有找到与用户问题直接相关的内容。请根据你的通用知识，尽可能帮助用户解答问题。\n\n注意事项：\n1. 明确告知用户这是基于通用知识的回答，而非知识库内容\n2. 如果问题涉及特定领域或需要最新信息，建议用户查阅官方资料\n3. 保持回答的准确性和客观性\n\n用户问题：{{query}}"
       },
     },
   },

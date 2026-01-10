@@ -25,7 +25,7 @@
               @click="selectTemplate(template)"
             >
               <div class="template-item-header">
-                <span class="template-name">{{ template.name }}</span>
+                <span class="template-name">{{ getLocalizedName(template) }}</span>
                 <span v-if="template.has_knowledge_base" class="template-tag kb-tag">
                   <t-icon name="folder" size="12px" />
                   {{ $t('promptTemplate.withKnowledgeBase') }}
@@ -35,7 +35,7 @@
                   {{ $t('promptTemplate.withWebSearch') }}
                 </span>
               </div>
-              <p class="template-desc">{{ template.description }}</p>
+              <p class="template-desc">{{ getLocalizedDesc(template) }}</p>
             </div>
           </div>
         </div>
@@ -55,6 +55,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { getPromptTemplates, type PromptTemplate, type PromptTemplatesConfig } from '@/api/system';
 
 const props = defineProps<{
@@ -67,9 +68,21 @@ const emit = defineEmits<{
   (e: 'select', content: string): void;
 }>();
 
+const { t, te } = useI18n();
+
 const popupVisible = ref(false);
 const loading = ref(false);
 const templatesConfig = ref<PromptTemplatesConfig | null>(null);
+
+const getLocalizedName = (template: PromptTemplate) => {
+  const key = `promptTemplate.${props.type}.${template.id}.name`;
+  return te(key) ? t(key) : template.name;
+};
+
+const getLocalizedDesc = (template: PromptTemplate) => {
+  const key = `promptTemplate.${props.type}.${template.id}.desc`;
+  return te(key) ? t(key) : template.description;
+};
 
 const handleVisibleChange = async (visible: boolean) => {
   popupVisible.value = visible;
@@ -113,7 +126,9 @@ const templates = computed<PromptTemplate[]>(() => {
 });
 
 const selectTemplate = (template: PromptTemplate) => {
-  emit('select', template.content);
+  const contentKey = `promptTemplate.${props.type}.${template.id}.content`;
+  const content = te(contentKey) ? t(contentKey) : template.content;
+  emit('select', content);
   popupVisible.value = false;
 };
 
