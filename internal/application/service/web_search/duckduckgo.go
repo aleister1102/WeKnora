@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/Tencent/WeKnora/internal/common"
 	"github.com/Tencent/WeKnora/internal/config"
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/types"
@@ -72,8 +73,15 @@ func (p *DuckDuckGoProvider) searchHTML(
 	baseURL := "https://html.duckduckgo.com/html/"
 	params := url.Values{}
 	params.Set("q", query)
-	// Prefer Chinese results if applicable; otherwise DDG will auto-detect
-	params.Set("kl", "cn-zh")
+	
+	// Use locale from context to set kl parameter
+	locale := common.GetLocale(ctx)
+	if strings.HasPrefix(locale, "en") {
+		params.Set("kl", "us-en")
+	} else {
+		// Default to Chinese results
+		params.Set("kl", "cn-zh")
+	}
 
 	reqURL := baseURL + "?" + params.Encode()
 	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)

@@ -40,6 +40,10 @@ instance.interceptors.request.use(
         console.error('Failed to parse tenant info', e);
       }
     }
+
+    // 添加语言偏好请求头
+    const locale = localStorage.getItem('locale') || 'zh-CN';
+    config.headers["Accept-Language"] = locale;
     
     config.headers["X-Request-ID"] = `${generateRandomString(12)}`;
     return config;

@@ -14,6 +14,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/chromedp"
 
+	"github.com/Tencent/WeKnora/internal/common"
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/models/chat"
 	"github.com/Tencent/WeKnora/internal/types"
@@ -304,12 +305,8 @@ func (t *WebFetchTool) processWithLLM(ctx context.Context, params webFetchParams
 		return "", fmt.Errorf("chat model not available for web_fetch")
 	}
 
-	systemMessage := "你是一名擅长阅读网页内容的智能助手，请根据提供的网页文本回答用户需求，严禁编造未在文本中出现的信息。"
-	userTemplate := `用户请求:
-%s
-
-网页内容:
-%s`
+	systemMessage := common.GetI18nMsg(ctx, common.I18nKeyWebFetchSystemMessage)
+	userTemplate := common.GetI18nMsg(ctx, common.I18nKeyWebFetchUserTemplate, params.Prompt, content)
 
 	messages := []chat.Message{
 		{
@@ -318,7 +315,7 @@ func (t *WebFetchTool) processWithLLM(ctx context.Context, params webFetchParams
 		},
 		{
 			Role:    "user",
-			Content: fmt.Sprintf(userTemplate, params.Prompt, content),
+			Content: userTemplate,
 		},
 	}
 
@@ -447,7 +444,14 @@ func (t *WebFetchTool) fetchWithTimeout(ctx context.Context, targetURL string) (
 		"Accept",
 		"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
 	)
-	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+	
+	locale := common.GetLocale(ctx)
+	if strings.HasPrefix(locale, "zh") {
+		req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+	} else {
+		req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	}
+	
 	req.Header.Set("Cache-Control", "no-cache")
 
 	return t.client.Do(req)

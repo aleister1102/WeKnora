@@ -485,7 +485,7 @@ func (e *AgentEngine) executeLoop(
 			common.PipelineError(ctx, "Agent", "final_answer_failed", map[string]interface{}{
 				"error": err.Error(),
 			})
-			state.FinalAnswer = "抱歉，我无法生成完整的答案。"
+			state.FinalAnswer = common.GetI18nMsg(ctx, common.I18nKeySynthesisError)
 		}
 		state.IsComplete = true
 	}
@@ -659,13 +659,7 @@ func (e *AgentEngine) streamReflectionToEventBus(
 	sessionID string,
 ) (string, error) {
 	// Simplified reflection without BuildReflectionPrompt
-	reflectionPrompt := fmt.Sprintf(`请评估刚才调用工具 %s 的结果，并决定下一步行动。
-
-工具返回: %s
-
-思考:
-1. 结果是否满足需求？
-2. 下一步应该做什么？`, toolName, result)
+	reflectionPrompt := common.GetI18nMsg(ctx, common.I18nKeyReflectionPrompt, toolName, result)
 
 	messages := []chat.Message{
 		{Role: "user", Content: reflectionPrompt},
@@ -679,7 +673,7 @@ func (e *AgentEngine) streamReflectionToEventBus(
 		messages,
 		&chat.ChatOptions{Temperature: 0.5},
 		func(chunk *types.StreamResponse, fullContent string) {
-			if chunk.Content != "" {
+			if chunk.Content != "" || chunk.Done {
 				e.eventBus.Emit(ctx, event.Event{
 					ID:        reflectionID, // Same ID for all chunks in this stream
 					Type:      event.EventAgentReflection,
@@ -749,7 +743,7 @@ func (e *AgentEngine) streamThinkingToEventBus(
 				}
 			}
 
-			if chunk.Content != "" {
+			if chunk.Content != "" || chunk.Done {
 				// logger.Debugf(ctx, "[Agent][Thinking][Iteration-%d] Emitting thought chunk: %d chars",
 				// 	iteration+1, len(chunk.Content))
 				e.eventBus.Emit(ctx, event.Event{
@@ -819,7 +813,7 @@ func (e *AgentEngine) streamFinalAnswerToEventBus(
 			toolResultCount++
 			messages = append(messages, chat.Message{
 				Role:    "user",
-				Content: fmt.Sprintf("工具 %s 返回: %s", toolCall.Name, toolCall.Result.Output),
+				Content: common.GetI18nMsg(ctx, common.I18nKeyToolResultPrefix, toolCall.Name, toolCall.Result.Output),
 			})
 			logger.Debugf(ctx, "[Agent][FinalAnswer] Added tool result [Step-%d][Tool-%d]: %s (output: %d chars)",
 				stepIdx+1, toolIdx+1, toolCall.Name, len(toolCall.Result.Output))
@@ -830,17 +824,7 @@ func (e *AgentEngine) streamFinalAnswerToEventBus(
 		len(messages), toolResultCount)
 
 	// Add final answer prompt
-	finalPrompt := fmt.Sprintf(`基于上述工具调用结果，请为用户问题生成完整答案。
-
-用户问题: %s
-
-要求:
-1. 基于实际检索到的内容回答
-2. 清晰标注信息来源 (chunk_id, 文档名)
-3. 结构化组织答案
-4. 如信息不足，诚实说明
-
-现在请生成最终答案:`, query)
+	finalPrompt := common.GetI18nMsg(ctx, common.I18nKeyFinalPrompt, query)
 
 	messages = append(messages, chat.Message{
 		Role:    "user",
@@ -856,7 +840,7 @@ func (e *AgentEngine) streamFinalAnswerToEventBus(
 		messages,
 		&chat.ChatOptions{Temperature: e.config.Temperature},
 		func(chunk *types.StreamResponse, fullContent string) {
-			if chunk.Content != "" {
+			if chunk.Content != "" || chunk.Done {
 				logger.Debugf(ctx, "[Agent][FinalAnswer] Emitting answer chunk: %d chars", len(chunk.Content))
 				e.eventBus.Emit(ctx, event.Event{
 					ID:        answerID, // Same ID for all chunks in this stream

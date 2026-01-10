@@ -142,7 +142,7 @@
             <p class="hint-title">{{ $t('agentSettings.systemPrompt.availablePlaceholders') }}</p>
             <ul class="placeholder-list">
               <li v-for="placeholder in availablePlaceholders" :key="placeholder.name">
-                <code v-html="`{{${placeholder.name}}}`"></code> - {{ placeholder.label }}（{{ placeholder.description }}）
+                <code v-html="`{{${placeholder.name}}}`"></code> - {{ te(`agent.placeholders.${placeholder.name}.label`) ? t(`agent.placeholders.${placeholder.name}.label`) : placeholder.label }}（{{ te(`agent.placeholders.${placeholder.name}.description`) ? t(`agent.placeholders.${placeholder.name}.description`) : placeholder.description }}）
               </li>
             </ul>
             <p class="hint-tip">{{ $t('agentSettings.systemPrompt.hintPrefix') }} <code>&#123;&#123;</code> {{ $t('agentSettings.systemPrompt.hintSuffix') }}</p>
@@ -202,7 +202,7 @@
                   <div class="placeholder-name">
                     <code v-html="`{{${placeholder.name}}}`"></code>
                   </div>
-                  <div class="placeholder-desc">{{ placeholder.description }}</div>
+                  <div class="placeholder-desc">{{ te(`agent.placeholders.${placeholder.name}.description`) ? t(`agent.placeholders.${placeholder.name}.description`) : placeholder.description }}</div>
                 </div>
               </div>
             </div>
@@ -655,7 +655,7 @@ const activeSection = computed(() => props.activeSubSection || 'modes')
 
 const settingsStore = useSettingsStore()
 const router = useRouter()
-const { t } = useI18n()
+const { t, te } = useI18n()
 
 // Tab 状态
 const activeTab = ref('agent')

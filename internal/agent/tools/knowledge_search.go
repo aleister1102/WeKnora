@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/Tencent/WeKnora/internal/common"
 	"github.com/Tencent/WeKnora/internal/config"
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/models/chat"
@@ -978,12 +979,8 @@ func (t *KnowledgeSearchTool) formatOutput(
 		if len(queries) > 0 {
 			data["queries"] = queries
 		}
-		output := fmt.Sprintf("No relevant content found in %d knowledge base(s).\n\n", len(kbsToSearch))
-		output += "=== ⚠️ CRITICAL - Next Steps ===\n"
-		output += "- ❌ DO NOT use training data or general knowledge to answer\n"
-		output += "- ✅ If web_search is enabled: You MUST use web_search to find information\n"
-		output += "- ✅ If web_search is disabled: State 'I couldn't find relevant information in the knowledge base'\n"
-		output += "- NEVER fabricate or infer answers - ONLY use retrieved content\n"
+		output := fmt.Sprintf(common.GetI18nMsg(ctx, common.I18nKeySearchNoResults, len(kbsToSearch)) + "\n\n")
+		output += common.GetI18nMsg(ctx, common.I18nKeySearchNextSteps) + "\n"
 
 		return &types.ToolResult{
 			Success: true,
@@ -1092,10 +1089,10 @@ func (t *KnowledgeSearchTool) formatOutput(
 						output += fmt.Sprintf("      URL: %s\n", img.URL)
 					}
 					if img.Caption != "" {
-						output += fmt.Sprintf("      Caption: %s\n", img.Caption)
+						output += fmt.Sprintf("      %s: %s\n", common.GetI18nMsg(ctx, common.I18nKeySearchImageDesc), img.Caption)
 					}
 					if img.OCRText != "" {
-						output += fmt.Sprintf("      OCR Text: %s\n", img.OCRText)
+						output += fmt.Sprintf("      %s: %s\n", common.GetI18nMsg(ctx, common.I18nKeySearchImageText), img.OCRText)
 					}
 				}
 			}
@@ -1173,7 +1170,7 @@ func (t *KnowledgeSearchTool) formatOutput(
 	}
 
 	// Add statistics and recommendations for each knowledge
-	output += "\n=== 检索统计与建议 ===\n\n"
+	output += "\n=== " + common.GetI18nMsg(ctx, common.I18nKeySearchStats) + " ===\n\n"
 	for knowledgeID, retrievedChunks := range knowledgeChunkMap {
 		totalChunks := knowledgeTotalMap[knowledgeID]
 		retrievedCount := len(retrievedChunks)
@@ -1183,10 +1180,10 @@ func (t *KnowledgeSearchTool) formatOutput(
 			percentage := float64(retrievedCount) / float64(totalChunks) * 100
 			remaining := totalChunks - int64(retrievedCount)
 
-			output += fmt.Sprintf("文档: %s (%s)\n", title, knowledgeID)
-			output += fmt.Sprintf("  总 Chunk 数: %d\n", totalChunks)
-			output += fmt.Sprintf("  已召回: %d 个 (%.1f%%)\n", retrievedCount, percentage)
-			output += fmt.Sprintf("  未召回: %d 个\n", remaining)
+			output += fmt.Sprintf("%s: %s (%s)\n", common.GetI18nMsg(ctx, common.I18nKeySearchDoc), title, knowledgeID)
+			output += fmt.Sprintf("  %s: %d\n", common.GetI18nMsg(ctx, common.I18nKeySearchTotalChunks), totalChunks)
+			output += fmt.Sprintf("  %s: %d (%.1f%%)\n", common.GetI18nMsg(ctx, common.I18nKeySearchRecalled), retrievedCount, percentage)
+			output += fmt.Sprintf("  %s: %d\n", common.GetI18nMsg(ctx, common.I18nKeySearchNotRecalled), remaining)
 
 		}
 	}
@@ -1250,10 +1247,10 @@ func (t *KnowledgeSearchTool) getEnrichedPassage(ctx context.Context, result *ty
 	var imageTexts []string
 	for _, img := range imageInfos {
 		if img.Caption != "" {
-			imageTexts = append(imageTexts, fmt.Sprintf("图片描述: %s", img.Caption))
+			imageTexts = append(imageTexts, fmt.Sprintf("%s: %s", common.GetI18nMsg(ctx, common.I18nKeySearchImageDesc), img.Caption))
 		}
 		if img.OCRText != "" {
-			imageTexts = append(imageTexts, fmt.Sprintf("图片文本: %s", img.OCRText))
+			imageTexts = append(imageTexts, fmt.Sprintf("%s: %s", common.GetI18nMsg(ctx, common.I18nKeySearchImageText), img.OCRText))
 		}
 	}
 

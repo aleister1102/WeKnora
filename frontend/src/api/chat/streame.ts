@@ -62,6 +62,9 @@ export function useStream() {
       }
     }
 
+    // 获取语言偏好
+    const locale = localStorage.getItem('locale') || 'zh-CN';
+
     // Validate knowledge_base_ids for agent-chat requests
     // Note: knowledge_base_ids can be empty if user hasn't selected any, but we allow it
     // The backend will handle the case when no knowledge bases are selected
@@ -116,6 +119,7 @@ export function useStream() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
           "X-Request-ID": `${generateRandomString(12)}`,
+          "Accept-Language": locale,
           ...(tenantIdHeader ? { "X-Tenant-ID": tenantIdHeader } : {}),
         },
         body:

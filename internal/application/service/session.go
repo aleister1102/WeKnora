@@ -10,6 +10,7 @@ import (
 	"github.com/Tencent/WeKnora/internal/agent/tools"
 	chatpipline "github.com/Tencent/WeKnora/internal/application/service/chat_pipline"
 	llmcontext "github.com/Tencent/WeKnora/internal/application/service/llmcontext"
+	"github.com/Tencent/WeKnora/internal/common"
 	"github.com/Tencent/WeKnora/internal/config"
 	"github.com/Tencent/WeKnora/internal/event"
 	"github.com/Tencent/WeKnora/internal/logger"
@@ -292,7 +293,7 @@ func (s *sessionService) GenerateTitle(ctx context.Context,
 	// Prepare messages for title generation
 	var chatMessages []chat.Message
 	chatMessages = append(chatMessages,
-		chat.Message{Role: "system", Content: s.cfg.Conversation.GenerateSessionTitlePrompt},
+		chat.Message{Role: "system", Content: common.GetI18nMsg(ctx, common.I18nKeyGenerateSessionTitlePrompt)},
 	)
 	chatMessages = append(chatMessages,
 		chat.Message{Role: "user", Content: message.Content + " /no_think"},
@@ -426,8 +427,8 @@ func (s *sessionService) KnowledgeQA(
 	}
 
 	// Initialize default values from config.yaml
-	rewritePromptSystem := s.cfg.Conversation.RewritePromptSystem
-	rewritePromptUser := s.cfg.Conversation.RewritePromptUser
+	rewritePromptSystem := common.GetI18nMsg(ctx, common.I18nKeyRewritePromptSystem)
+	rewritePromptUser := common.GetI18nMsg(ctx, common.I18nKeyRewritePromptUser)
 	vectorThreshold := s.cfg.Conversation.VectorThreshold
 	keywordThreshold := s.cfg.Conversation.KeywordThreshold
 	embeddingTopK := s.cfg.Conversation.EmbeddingTopK
@@ -435,14 +436,14 @@ func (s *sessionService) KnowledgeQA(
 	rerankThreshold := s.cfg.Conversation.RerankThreshold
 	maxRounds := s.cfg.Conversation.MaxRounds
 	fallbackStrategy := types.FallbackStrategy(s.cfg.Conversation.FallbackStrategy)
-	fallbackResponse := s.cfg.Conversation.FallbackResponse
-	fallbackPrompt := s.cfg.Conversation.FallbackPrompt
+	fallbackResponse := common.GetI18nMsg(ctx, common.I18nKeyFallbackResponse)
+	fallbackPrompt := common.GetI18nMsg(ctx, common.I18nKeyFallbackPrompt)
 	enableRewrite := s.cfg.Conversation.EnableRewrite
 	enableQueryExpansion := s.cfg.Conversation.EnableQueryExpansion
 	rerankModelID := ""
 
 	summaryConfig := types.SummaryConfig{
-		Prompt:              s.cfg.Conversation.Summary.Prompt,
+		Prompt:              common.GetI18nMsg(ctx, common.I18nKeySummaryPrompt),
 		ContextTemplate:     s.cfg.Conversation.Summary.ContextTemplate,
 		Temperature:         s.cfg.Conversation.Summary.Temperature,
 		NoMatchPrefix:       s.cfg.Conversation.Summary.NoMatchPrefix,

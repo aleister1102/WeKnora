@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
+	"github.com/Tencent/WeKnora/internal/common"
 	"github.com/Tencent/WeKnora/internal/types"
 	"github.com/Tencent/WeKnora/internal/utils"
 )
@@ -173,14 +175,14 @@ func (t *TodoWriteTool) Execute(ctx context.Context, args json.RawMessage) (*typ
 	}
 
 	if input.Task == "" {
-		input.Task = "未提供任务描述"
+		input.Task = "No task description provided"
 	}
 
 	// Parse plan steps
 	planSteps := input.Steps
 
 	// Generate formatted output
-	output := generatePlanOutput(input.Task, planSteps)
+	output := generatePlanOutput(ctx, input.Task, planSteps)
 
 	// Prepare structured data for response
 	stepsJSON, _ := json.Marshal(planSteps)
@@ -226,18 +228,29 @@ func getStringArrayField(m map[string]interface{}, key string) []string {
 }
 
 // generatePlanOutput generates a formatted plan output
-func generatePlanOutput(task string, steps []PlanStep) string {
-	output := "计划已创建\n\n"
-	output += fmt.Sprintf("**任务**: %s\n\n", task)
+func generatePlanOutput(ctx context.Context, task string, steps []PlanStep) string {
+	output := common.GetI18nMsg(ctx, common.I18nKeyTodoCreated) + "\n\n"
+	output += fmt.Sprintf("**%s**: %s\n\n", common.GetI18nMsg(ctx, common.I18nKeyTodoTask), task)
 
 	if len(steps) == 0 {
-		output += "注意：未提供具体步骤。建议创建3-7个检索任务以系统化研究。\n\n"
-		output += "建议的检索流程（专注于检索任务，不包含总结）：\n"
-		output += "1. 使用 grep_chunks 搜索关键词定位相关文档\n"
-		output += "2. 使用 knowledge_search 进行语义搜索获取相关内容\n"
-		output += "3. 使用 list_knowledge_chunks 获取关键文档的完整内容\n"
-		output += "4. 使用 web_search 获取补充信息（如需要）\n"
-		output += "\n注意：总结和综合由 thinking 工具处理，不要在此处添加总结任务。\n"
+		locale := common.GetLocale(ctx)
+		if strings.HasPrefix(locale, "en") {
+			output += "Note: No specific steps provided. Recommended to create 3-7 retrieval tasks for systematic research.\n\n"
+			output += "Suggested retrieval workflow (focus on retrieval tasks, no summary):\n"
+			output += "1. Use grep_chunks to search keywords for relevant documents\n"
+			output += "2. Use knowledge_search for semantic search\n"
+			output += "3. Use list_knowledge_chunks to get full content of key documents\n"
+			output += "4. Use web_search for supplemental information (if needed)\n"
+			output += "\nNote: Summary and synthesis are handled by thinking tool, don't add summary tasks here.\n"
+		} else {
+			output += "注意：未提供具体步骤。建议创建3-7个检索任务以系统化研究。\n\n"
+			output += "建议的检索流程（专注于检索任务，不包含总结）：\n"
+			output += "1. 使用 grep_chunks 搜索关键词定位相关文档\n"
+			output += "2. 使用 knowledge_search 进行语义搜索获取相关内容\n"
+			output += "3. 使用 list_knowledge_chunks 获取关键文档的完整内容\n"
+			output += "4. 使用 web_search 获取补充信息（如需要）\n"
+			output += "\n注意：总结和综合由 thinking 工具处理，不要在此处添加总结任务。\n"
+		}
 		return output
 	}
 
@@ -258,7 +271,7 @@ func generatePlanOutput(task string, steps []PlanStep) string {
 	totalCount := len(steps)
 	remainingCount := pendingCount + inProgressCount
 
-	output += "**计划步骤**:\n\n"
+	output += "**" + common.GetI18nMsg(ctx, common.I18nKeyTodoSteps) + "**:\n\n"
 
 	// Display all steps in order
 	for i, step := range steps {
@@ -266,32 +279,42 @@ func generatePlanOutput(task string, steps []PlanStep) string {
 	}
 
 	// Add summary and emphasis on remaining tasks
-	output += "\n=== 任务进度 ===\n"
-	output += fmt.Sprintf("总计: %d 个任务\n", totalCount)
-	output += fmt.Sprintf("✅ 已完成: %d 个\n", completedCount)
-	output += fmt.Sprintf("🔄 进行中: %d 个\n", inProgressCount)
-	output += fmt.Sprintf("⏳ 待处理: %d 个\n", pendingCount)
+	output += "\n=== " + common.GetI18nMsg(ctx, common.I18nKeyTodoProgress) + " ===\n"
+	output += fmt.Sprintf("%s: %d\n", common.GetI18nMsg(ctx, common.I18nKeyTodoTotal), totalCount)
+	output += fmt.Sprintf("✅ %s: %d\n", common.GetI18nMsg(ctx, common.I18nKeyTodoCompleted), completedCount)
+	output += fmt.Sprintf("🔄 %s: %d\n", common.GetI18nMsg(ctx, common.I18nKeyTodoInProgress), inProgressCount)
+	output += fmt.Sprintf("⏳ %s: %d\n", common.GetI18nMsg(ctx, common.I18nKeyTodoPending), pendingCount)
 
-	output += "\n=== ⚠️ 重要提醒 ===\n"
+	output += "\n=== ⚠️ " + common.GetI18nMsg(ctx, common.I18nKeyTodoReminder) + " ===\n"
 	if remainingCount > 0 {
-		output += fmt.Sprintf("**还有 %d 个任务未完成！**\n\n", remainingCount)
-		output += "**必须完成所有任务后才能总结或得出结论。**\n\n"
-		output += "下一步操作：\n"
-		if inProgressCount > 0 {
-			output += "- 继续完成当前进行中的任务\n"
+		output += common.GetI18nMsg(ctx, common.I18nKeyTodoRemaining, remainingCount) + "\n\n"
+		output += "**" + common.GetI18nMsg(ctx, common.I18nKeyTodoNextSteps) + "**\n"
+		
+		locale := common.GetLocale(ctx)
+		if strings.HasPrefix(locale, "en") {
+			if inProgressCount > 0 {
+				output += "- Continue completing the currently in-progress task\n"
+			}
+			if pendingCount > 0 {
+				output += fmt.Sprintf("- Start processing %d pending task(s)\n", pendingCount)
+				output += "- Complete each task in order, do not skip\n"
+			}
+			output += "- After completing each task, update todo_write and mark as completed\n"
+			output += "- Final summary can only be generated after all tasks are completed\n"
+		} else {
+			if inProgressCount > 0 {
+				output += "- 继续完成当前进行中的任务\n"
+			}
+			if pendingCount > 0 {
+				output += fmt.Sprintf("- 开始处理 %d 个待处理任务\n", pendingCount)
+				output += "- 按顺序完成每个任务，不要跳过\n"
+			}
+			output += "- 完成每个任务后，更新 todo_write 标记为 completed\n"
+			output += "- 只有在所有任务完成后，才能生成最终总结\n"
 		}
-		if pendingCount > 0 {
-			output += fmt.Sprintf("- 开始处理 %d 个待处理任务\n", pendingCount)
-			output += "- 按顺序完成每个任务，不要跳过\n"
-		}
-		output += "- 完成每个任务后，更新 todo_write 标记为 completed\n"
-		output += "- 只有在所有任务完成后，才能生成最终总结\n"
 	} else {
-		output += "✅ **所有任务已完成！**\n\n"
-		output += "现在可以：\n"
-		output += "- 综合所有任务的发现\n"
-		output += "- 生成完整的最终答案或报告\n"
-		output += "- 确保所有方面都已充分研究\n"
+		output += "✅ **" + common.GetI18nMsg(ctx, common.I18nKeyTodoAllDone) + "**\n\n"
+		output += common.GetI18nMsg(ctx, common.I18nKeyTodoAllDoneNext) + "\n"
 	}
 
 	return output

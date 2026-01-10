@@ -114,14 +114,13 @@
                           <t-tooltip 
                             v-for="placeholder in availablePlaceholders" 
                             :key="placeholder.name"
-                            :content="placeholder.description + $t('agent.editor.clickToInsert')"
+                            :content="(te(`agent.placeholders.${placeholder.name}.description`) ? t(`agent.placeholders.${placeholder.name}.description`) : placeholder.description) + $t('agent.editor.clickToInsert')"
                             placement="top"
                           >
                             <span 
                               class="placeholder-tag"
                               @click="handlePlaceholderClick('system', placeholder.name)"
-                              v-text="'{{' + placeholder.name + '}}'"
-                            ></span>
+                            >{{ '{' + '{' + placeholder.name + '}' + '}' }}</span>
                           </t-tooltip>
                           <span class="placeholder-hint" v-text="$t('agent.editor.insertPlaceholder')"></span>
                         </div>
@@ -921,7 +920,7 @@
                                   <div class="placeholder-name">
                                     <code v-html="`{{${placeholder.name}}}`"></code>
                                   </div>
-                                  <div class="placeholder-desc">{{ placeholder.description }}</div>
+                                  <div class="placeholder-desc">{{ te(`agent.placeholders.${placeholder.name}.description`) ? t(`agent.placeholders.${placeholder.name}.description`) : placeholder.description }}</div>
                                 </div>
                               </div>
                             </div>
@@ -962,7 +961,7 @@ import ModelSelector from '@/components/ModelSelector.vue';
 
 const uiStore = useUIStore();
 
-const { t } = useI18n();
+const { t, te } = useI18n();
 
 const props = defineProps<{
   visible: boolean;
