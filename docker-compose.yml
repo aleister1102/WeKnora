@@ -54,7 +54,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-}
       - DB_NAME=${DB_NAME:-}
       - TZ=Asia/Shanghai
-      - OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317
+      # Leave OTLP endpoint empty by default; set externally when Jaeger/collector is running.
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       - OTEL_SERVICE_NAME=WeKnora
       - OTEL_TRACES_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
