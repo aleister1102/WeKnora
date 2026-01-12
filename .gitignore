@@ -41,3 +41,4 @@ data/files/
 /scripts/scale_dev_jobs.sh
 server
 frontend/.vite
+output/

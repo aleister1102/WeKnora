@@ -27,6 +27,13 @@ RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate
 # Copy go mod and sum files
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
+
+# Prepare for spatial download (only need Makefile and the download script)
+COPY Makefile ./
+COPY cmd/download/duckdb/duckdb.go ./cmd/download/duckdb/duckdb.go
+RUN --mount=type=cache,target=/go/pkg/mod make download_spatial
+
+# Copy the rest of the source
 COPY . .
 
 # Get version and commit info for build injection
@@ -42,7 +49,6 @@ ENV BUILD_TIME=${BUILD_TIME_ARG}
 ENV GO_VERSION=${GO_VERSION_ARG}
 
 # Build the application with version info
-RUN --mount=type=cache,target=/go/pkg/mod make download_spatial
 RUN --mount=type=cache,target=/go/pkg/mod make build-prod
 RUN --mount=type=cache,target=/go/pkg/mod cp -r /go/pkg/mod/github.com/yanyiwu/ /app/yanyiwu/
 
@@ -63,7 +69,9 @@ RUN if [ -n "$APK_MIRROR_ARG" ] && [ "$APK_MIRROR_ARG" != "deb.debian.org" ]; th
     apt-get install -y --no-install-recommends \
         build-essential postgresql-client default-mysql-client ca-certificates tzdata sed curl bash vim wget \
         python3 python3-pip python3-dev libffi-dev libssl-dev \
-        nodejs npm && \
+        nodejs npm \
+        chromium chromium-sandbox \
+        libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxrandr2 libgbm1 libasound2 && \
     python3 -m pip install --break-system-packages --upgrade pip setuptools wheel && \
     mkdir -p /home/appuser/.local/bin && \
     curl -LsSf https://astral.sh/uv/install.sh | CARGO_HOME=/home/appuser/.cargo UV_INSTALL_DIR=/home/appuser/.local/bin sh && \

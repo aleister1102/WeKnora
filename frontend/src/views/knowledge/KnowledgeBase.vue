@@ -986,16 +986,23 @@ async function createNewSession(value: string): Promise<void> {
             </div>
           </div>
           <div class="tag-search-bar">
-            <t-input
-              v-model.trim="tagSearchQuery"
-              size="small"
-              :placeholder="$t('knowledgeBase.tagSearchPlaceholder')"
-              clearable
-            >
-              <template #prefix-icon>
+            <div class="custom-native-input-wrapper small">
+              <div class="input-prefix">
                 <t-icon name="search" size="14px" />
-              </template>
-            </t-input>
+              </div>
+              <input
+                v-model="tagSearchQuery"
+                :placeholder="$t('knowledgeBase.tagSearchPlaceholder')"
+                class="native-input-inner"
+              />
+              <div
+                v-if="tagSearchQuery"
+                class="input-suffix"
+                @click="tagSearchQuery = ''"
+              >
+                <t-icon name="close-circle-filled" size="14px" />
+              </div>
+            </div>
           </div>
           <div class="tag-list-scroll">
             <t-loading :loading="tagLoading" size="small">
@@ -1142,18 +1149,24 @@ async function createNewSession(value: string): Promise<void> {
           <div class="doc-card-area">
             <!-- 搜索栏和筛选 -->
             <div class="doc-filter-bar">
-              <t-input
-                v-model.trim="docSearchKeyword"
-                :placeholder="$t('knowledgeBase.docSearchPlaceholder')"
-                clearable
-                class="doc-search-input"
-                @clear="loadKnowledgeFiles(kbId)"
-                @keydown.enter="loadKnowledgeFiles(kbId)"
-              >
-                <template #prefix-icon>
+              <div class="custom-native-input-wrapper doc-search-input">
+                <div class="input-prefix">
                   <t-icon name="search" size="16px" />
-                </template>
-              </t-input>
+                </div>
+                <input
+                  v-model="docSearchKeyword"
+                  :placeholder="$t('knowledgeBase.docSearchPlaceholder')"
+                  class="native-input-inner"
+                  @keydown.enter="loadKnowledgeFiles(kbId)"
+                />
+                <div
+                  v-if="docSearchKeyword"
+                  class="input-suffix"
+                  @click="docSearchKeyword = ''; loadKnowledgeFiles(kbId)"
+                >
+                  <t-icon name="close-circle-filled" size="16px" />
+                </div>
+              </div>
               <t-select
                 v-model="selectedFileType"
                 :options="fileTypeOptions"
@@ -2472,6 +2485,69 @@ async function createNewSession(value: string): Promise<void> {
 @media (min-width: 2000px) {
   .doc-card-list {
     grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.custom-native-input-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  background-color: #f7f9fc;
+  border: 1px solid #e5e9f2;
+  border-radius: 6px;
+  padding: 0 10px;
+  height: 32px;
+  transition: all 0.2s ease;
+
+  &:hover,
+  &:focus-within {
+    border-color: #4080ff;
+    background-color: #fff;
+    box-shadow: 0 0 0 2px rgba(64, 128, 255, 0.1);
+  }
+
+  &.small {
+    height: 28px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .input-prefix {
+    display: flex;
+    align-items: center;
+    margin-right: 8px;
+    color: #8b9196;
+    flex-shrink: 0;
+  }
+
+  .native-input-inner {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 13px;
+    color: #1d2129;
+    height: 100%;
+    width: 100%;
+    padding: 0;
+
+    &::placeholder {
+      color: #8b9196;
+    }
+  }
+
+  .input-suffix {
+    display: flex;
+    align-items: center;
+    margin-left: 8px;
+    color: #8b9196;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.2s;
+
+    &:hover {
+      color: #4e5969;
+    }
   }
 }
 </style>

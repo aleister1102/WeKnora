@@ -5155,15 +5155,8 @@ func (s *knowledgeService) ProcessDocument(ctx context.Context, t *asynq.Task) e
 	}
 
 	if knowledge.ParseStatus == types.ParseStatusFailed {
-		// 检查是否可恢复（例如：超时、临时错误等）
-		// 对于不可恢复的错误，直接返回
-		logger.Warnf(
-			ctx,
-			"Document processing previously failed: %s, error: %s",
-			payload.KnowledgeID,
-			knowledge.ErrorMessage,
-		)
-		// 这里可以根据错误类型判断是否可恢复，暂时允许重试
+		logger.Infof(ctx, "Document already failed, skipping: %s", payload.KnowledgeID)
+		return nil // 幂等：已失败的任务直接返回，防止无限重试
 	}
 
 	// 检查是否有部分处理（有chunks但状态不是completed）

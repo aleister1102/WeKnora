@@ -2,10 +2,12 @@ package tools
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -79,6 +81,9 @@ func NewWebFetchTool(chatModel chat.Chat) *WebFetchTool {
 		BaseTool: webFetchTool,
 		client: &http.Client{
 			Timeout: webFetchTimeout,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
 		},
 		chatModel: chatModel,
 	}
@@ -383,10 +388,24 @@ func (t *WebFetchTool) fetchWithChromedp(ctx context.Context, targetURL string) 
 		chromedp.Flag("disable-gpu", true),
 		chromedp.Flag("disable-blink-features", "AutomationControlled"),
 		chromedp.Flag("disable-features", "VizDisplayCompositor"),
+		chromedp.Flag("ignore-certificate-errors", true),
 		chromedp.UserAgent(
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 		),
 	)
+
+	// Add possible Chrome paths for macOS
+	macOSChromePaths := []string{
+		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+		"/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
+		"/usr/bin/google-chrome",
+	}
+	for _, path := range macOSChromePaths {
+		if _, err := os.Stat(path); err == nil {
+			opts = append(opts, chromedp.ExecPath(path))
+			break
+		}
+	}
 
 	allocCtx, cancel := chromedp.NewExecAllocator(ctx, opts...)
 	defer cancel()
@@ -444,14 +463,14 @@ func (t *WebFetchTool) fetchWithTimeout(ctx context.Context, targetURL string) (
 		"Accept",
 		"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
 	)
-	
+
 	locale := common.GetLocale(ctx)
 	if strings.HasPrefix(locale, "zh") {
 		req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
 	} else {
 		req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	}
-	
+
 	req.Header.Set("Cache-Control", "no-cache")
 
 	return t.client.Do(req)

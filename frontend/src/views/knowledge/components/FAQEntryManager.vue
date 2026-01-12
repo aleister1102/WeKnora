@@ -127,16 +127,23 @@
             </div>
           </div>
           <div class="tag-search-bar">
-            <t-input
-              v-model.trim="tagSearchQuery"
-              size="small"
-              :placeholder="$t('knowledgeBase.tagSearchPlaceholder')"
-              clearable
-            >
-              <template #prefix-icon>
+            <div class="custom-native-input-wrapper small">
+              <div class="input-prefix">
                 <t-icon name="search" size="14px" />
-              </template>
-            </t-input>
+              </div>
+              <input
+                v-model="tagSearchQuery"
+                :placeholder="$t('knowledgeBase.tagSearchPlaceholder')"
+                class="native-input-inner"
+              />
+              <div
+                v-if="tagSearchQuery"
+                class="input-suffix"
+                @click="tagSearchQuery = ''"
+              >
+                <t-icon name="close-circle-filled" size="14px" />
+              </div>
+            </div>
           </div>
           <t-loading :loading="tagLoading" size="small">
             <div ref="tagListRef" class="faq-tag-list" @scroll="handleTagListScroll">
@@ -274,17 +281,24 @@
         <div class="faq-card-area">
           <!-- 搜索栏 -->
           <div class="faq-search-bar">
-            <t-input
-              v-model.trim="entrySearchKeyword"
-              :placeholder="$t('knowledgeEditor.faq.searchPlaceholder')"
-              clearable
-              @clear="loadEntries()"
-              @keydown.enter="loadEntries()"
-            >
-              <template #prefix-icon>
+            <div class="custom-native-input-wrapper entry-search-input">
+              <div class="input-prefix">
                 <t-icon name="search" size="16px" />
-              </template>
-            </t-input>
+              </div>
+              <input
+                v-model="entrySearchKeyword"
+                :placeholder="$t('knowledgeEditor.faq.searchPlaceholder')"
+                class="native-input-inner"
+                @keydown.enter="loadEntries()"
+              />
+              <div
+                v-if="entrySearchKeyword"
+                class="input-suffix"
+                @click="entrySearchKeyword = ''; loadEntries()"
+              >
+                <t-icon name="close-circle-filled" size="16px" />
+              </div>
+            </div>
           </div>
           <!-- Card List Container with Scroll -->
           <div ref="scrollContainer" class="faq-scroll-container" @scroll="handleScroll">
@@ -5754,6 +5768,69 @@ watch(() => entries.value.map(e => ({
   overflow-wrap: break-word;
   white-space: normal;
   line-height: 1.4;
+}
+
+.custom-native-input-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  background-color: #f7f9fc;
+  border: 1px solid #e5e9f2;
+  border-radius: 6px;
+  padding: 0 10px;
+  height: 32px;
+  transition: all 0.2s ease;
+
+  &:hover,
+  &:focus-within {
+    border-color: #4080ff;
+    background-color: #fff;
+    box-shadow: 0 0 0 2px rgba(64, 128, 255, 0.1);
+  }
+
+  &.small {
+    height: 28px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .input-prefix {
+    display: flex;
+    align-items: center;
+    margin-right: 8px;
+    color: #8b9196;
+    flex-shrink: 0;
+  }
+
+  .native-input-inner {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 13px;
+    color: #1d2129;
+    height: 100%;
+    width: 100%;
+    padding: 0;
+
+    &::placeholder {
+      color: #8b9196;
+    }
+  }
+
+  .input-suffix {
+    display: flex;
+    align-items: center;
+    margin-left: 8px;
+    color: #8b9196;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.2s;
+
+    &:hover {
+      color: #4e5969;
+    }
+  }
 }
 </style>
 

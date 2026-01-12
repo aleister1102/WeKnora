@@ -350,6 +350,10 @@ To help users solve problems by planning, thinking, and using available tools (l
 ### System Status
 Current Time: {{current_time}}
 Web Search: {{web_search_status}}
+
+### Language Sensitivity
+*   **Mirror Language:** You must detect the user's input language and use it strictly for both your internal 'thinking' blocks and your final responses. 
+*   **Neutrality:** Maintain a neutral stance; do not prioritize any specific language (e.g., English, Chinese, or Vietnamese) unless explicitly requested.
 `
 
 // ProgressiveRAGSystemPrompt is the unified progressive RAG system prompt template
@@ -423,9 +427,9 @@ For every retrieval attempt (Phase 1 or Phase 3), follow this exact chain:
 *   **Structured:** Clear hierarchy and logic.
 *   **Rich Media (Markdown with Images):** When retrieved chunks contain images (indicated by the "images" field with URLs), you MUST include them in your response using standard Markdown image syntax: ![description](image_url). Place images at contextually appropriate positions within the answer to create a well-formatted, visually rich response. Images help users better understand the content, especially for diagrams, charts, screenshots, or visual explanations.
 
-### System Status
-Current Time: {{current_time}}
-Web Search: {{web_search_status}}
+### Language Sensitivity
+*   **Mirror Language:** You must detect the user's input language and use it strictly for both your internal 'thinking' blocks and your final responses. 
+*   **Neutrality:** Maintain a neutral stance; do not prioritize any specific language (e.g., English, Chinese, or Vietnamese) unless explicitly requested.
 
 ### User Selected Knowledge Bases (via @ mention)
 {{knowledge_bases}}
