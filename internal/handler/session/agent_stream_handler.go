@@ -305,12 +305,12 @@ func (h *AgentStreamHandler) handleFinalAnswer(ctx context.Context, evt event.Ev
 			"completed_at": time.Now().Unix(),
 		}
 		delete(h.eventStartTimes, evt.ID)
-		
+
 		// Update assistant message with final answer and mark as completed
 		h.assistantMessage.Content = h.finalAnswer
 		h.assistantMessage.IsCompleted = true
 		h.assistantMessage.UpdatedAt = time.Now()
-		
+
 		// Persist message completion to database immediately
 		if h.messageService != nil {
 			if err := h.messageService.UpdateMessage(ctx, h.assistantMessage); err != nil {
@@ -482,4 +482,50 @@ func (h *AgentStreamHandler) handleComplete(ctx context.Context, evt event.Event
 	}
 
 	return nil
+}
+
+// Cleanup ensures message is marked as completed on interrupt
+func (h *AgentStreamHandler) Cleanup(ctx context.Context) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if h.assistantMessage != nil && !h.assistantMessage.IsCompleted {
+		logger.GetLogger(h.ctx).Warnf("Cleaning up incomplete message %s", h.assistantMessageID)
+
+		// If content is still empty but we have some accumulated content, use it
+		if h.assistantMessage.Content == "" && h.finalAnswer != "" {
+			h.assistantMessage.Content = h.finalAnswer
+		}
+
+		h.assistantMessage.IsCompleted = true
+		h.assistantMessage.UpdatedAt = time.Now()
+
+		// If no content was generated, add a helpful error message
+		if h.assistantMessage.Content == "" {
+			h.assistantMessage.Content = "[Generation interrupted or timed out]"
+		}
+
+		// Persist message completion to database using background context
+		// to ensure it works even if input ctx is cancelled
+		bgCtx := context.Background()
+		if h.messageService != nil {
+			if err := h.messageService.UpdateMessage(bgCtx, h.assistantMessage); err != nil {
+				logger.GetLogger(h.ctx).Errorf("Failed to persist message completion in cleanup: %v", err)
+			} else {
+				logger.GetLogger(h.ctx).Infof("Message %s marked as completed via cleanup", h.assistantMessageID)
+			}
+		}
+
+		// Also try to send one last "complete" event to frontend just in case
+		_ = h.streamManager.AppendEvent(bgCtx, h.sessionID, h.assistantMessageID, interfaces.StreamEvent{
+			ID:        fmt.Sprintf("cleanup-%d", time.Now().Unix()),
+			Type:      types.ResponseTypeComplete,
+			Content:   "",
+			Done:      true,
+			Timestamp: time.Now(),
+			Data: map[string]interface{}{
+				"status": "interrupted",
+			},
+		})
+	}
 }

@@ -379,7 +379,7 @@ func (h *Handler) handleAgentEventsForSSE(
 				response := buildStreamResponse(evt, requestID)
 
 				// Check for completion event
-				if evt.Type == "complete" {
+				if evt.Type == types.ResponseTypeComplete || evt.Type == types.ResponseTypeError {
 					streamCompleted = true
 				}
 

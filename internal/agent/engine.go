@@ -126,6 +126,39 @@ func (e *AgentEngine) Execute(
 		"tools":      toolListStr,
 	})
 
+	// Add panic recovery and handle unexpected interruption
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Errorf(ctx, "[Agent] Panic recovered: %v", r)
+			e.eventBus.Emit(ctx, event.Event{
+				ID:        generateEventID("panic"),
+				Type:      event.EventError,
+				SessionID: sessionID,
+				Data: event.ErrorData{
+					Error:     fmt.Sprintf("Panic recovered: %v", r),
+					Stage:     "agent_execution",
+					SessionID: sessionID,
+				},
+			})
+		} else if ctx.Err() != nil {
+			// Context cancelled or timed out
+			logger.Warnf(ctx, "[Agent] Context closed: %v", ctx.Err())
+			
+			// Use background context for emitting the final error event as the original ctx is cancelled
+			bgCtx := context.Background()
+			e.eventBus.Emit(bgCtx, event.Event{
+				ID:        generateEventID("interrupted"),
+				Type:      event.EventError,
+				SessionID: sessionID,
+				Data: event.ErrorData{
+					Error:     fmt.Sprintf("Execution interrupted: %v", ctx.Err()),
+					Stage:     "agent_execution",
+					SessionID: sessionID,
+				},
+			})
+		}
+	}()
+
 	_, err := e.executeLoop(ctx, state, query, messages, tools, sessionID, messageID)
 	if err != nil {
 		logger.Errorf(ctx, "[Agent] Execution failed: %v", err)

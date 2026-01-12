@@ -117,6 +117,7 @@ type sseStreamContext struct {
 	asyncCtx         context.Context
 	cancel           context.CancelFunc
 	assistantMessage *types.Message
+	streamHandler    *AgentStreamHandler
 }
 
 // setupSSEStream sets up the SSE streaming context
@@ -142,8 +143,9 @@ func (h *Handler) setupSSEStream(reqCtx *qaRequestContext, generateTitle bool) *
 	h.setupStopEventHandler(eventBus, reqCtx.sessionID, reqCtx.assistantMessage, cancel)
 
 	// Setup stream handler
-	h.setupStreamHandler(asyncCtx, reqCtx.sessionID, reqCtx.assistantMessage.ID,
+	streamHandler := h.setupStreamHandler(asyncCtx, reqCtx.sessionID, reqCtx.assistantMessage.ID,
 		reqCtx.requestID, reqCtx.assistantMessage, eventBus)
+	streamCtx.streamHandler = streamHandler
 
 	// Generate title if needed
 	if generateTitle && reqCtx.session.Title == "" {
@@ -463,8 +465,11 @@ func (h *Handler) executeAgentModeQA(reqCtx *qaRequestContext) {
 	})
 
 	// Execute AgentQA asynchronously
+	// Use a 5-minute timeout for agent execution
+	agentCtx, cancel := context.WithTimeout(streamCtx.asyncCtx, 5*time.Minute)
 	go func() {
 		defer func() {
+			cancel()
 			if r := recover(); r != nil {
 				buf := make([]byte, 1024)
 				runtime.Stack(buf, true)
@@ -472,12 +477,15 @@ func (h *Handler) executeAgentModeQA(reqCtx *qaRequestContext) {
 					errors.NewInternalServerError(fmt.Sprintf("Agent QA service panicked: %v\n%s", r, string(buf))),
 					map[string]interface{}{"session_id": sessionID})
 			}
-			h.completeAssistantMessage(streamCtx.asyncCtx, streamCtx.assistantMessage)
+
+			// Call cleanup to ensure terminal state and persistence
+			streamCtx.streamHandler.Cleanup(context.Background())
+
 			logger.Infof(streamCtx.asyncCtx, "Agent QA service completed for session: %s", sessionID)
 		}()
 
 		err := h.sessionService.AgentQA(
-			streamCtx.asyncCtx,
+			agentCtx,
 			reqCtx.session,
 			reqCtx.query,
 			reqCtx.assistantMessage.ID,
