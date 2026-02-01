@@ -307,6 +307,81 @@ export default {
     webSearchFound: "<strong>{count}</strong>개의 웹 검색 결과 발견",
     argumentsLabel: "파라미터",
     toolFallback: "도구",
+    punctuation: {
+      comma: ", ",
+      list: ", ",
+    },
+    kbTooltip: {
+      loading: "로드 중...",
+    },
+    toolStatus: {
+      calling: "{tool} 호출 중...",
+      callSuccess: "{tool} 호출",
+      callFailed: "{tool} 호출 실패",
+      searchKnowledge: {
+        success: "지식베이스 검색",
+        failure: "지식베이스 검색 실패",
+      },
+      webSearch: {
+        success: "웹 검색",
+        failure: "웹 검색 실패",
+      },
+      getDocumentInfo: {
+        success: "문서 정보 가져오기",
+        failure: "문서 정보 가져오기 실패",
+      },
+      thinking: {
+        success: "사고 완료",
+        failure: "사고 실패",
+      },
+      todoWrite: {
+        success: "작업 목록 업데이트",
+        failure: "작업 목록 업데이트 실패",
+      },
+    },
+    searchResults: {
+      none: "일치하는 결과를 찾을 수 없습니다",
+      summary: "결과 {count}개 발견",
+      kbSummary: "결과 {count}개 발견, {kbCount}개 파일에서",
+    },
+    webSearchResults: {
+      summary: "웹 검색 결과 {count}개 발견",
+    },
+    grepResults: {
+      none: "일치하는 결과를 찾을 수 없습니다",
+      summary: "일치 {count}건 발견",
+      shown: " (표시 {count}개)",
+    },
+    manual: {
+      emptyQuestion: "(질문 없음)",
+      emptyAnswer: "(답변 없음)",
+      title: "대화 발췌",
+    },
+    tools: {
+      thinking: { label: "사고", desc: "문제 해결을 위한 동적 및 반성적 사고 도구" },
+      todoWrite: { label: "계획 수립", desc: "구조화된 연구 계획 작성" },
+      grepChunks: { label: "키워드 검색", desc: "키워드로 문서 및 청크 검색" },
+      knowledgeSearch: { label: "의미 검색", desc: "질문을 이해하고 의미적으로 관련된 내용 검색" },
+      listKnowledgeChunks: { label: "문서 청크 보기", desc: "문서의 전체 청크 내용 확인" },
+      queryKnowledgeGraph: { label: "지식 그래프 쿼리", desc: "지식 그래프에서 관계 쿼리" },
+      getDocumentInfo: { label: "문서 정보 가져오기", desc: "문서 메타데이터 확인" },
+      databaseQuery: { label: "데이터베이스 쿼리", desc: "데이터베이스 정보 쿼리" },
+      dataAnalysis: { label: "데이터 분석", desc: "데이터 파일 이해 및 분석 수행" },
+      dataSchema: { label: "데이터 메타 정보 보기", desc: "테이블 파일의 메타 정보 가져오기" },
+      searchKnowledge: { label: "지식베이스 검색", desc: "지식베이스에서 관련 내용 검색" },
+      webSearch: { label: "웹 검색", desc: "인터넷에서 정보 검색" },
+      webFetch: { label: "웹 페이지 가져오기", desc: "웹 페이지 내용 가져오기" },
+      getRelatedDocuments: { label: "관련 문서 가져오기", desc: "현재 문서와 관련된 문서 가져오기" },
+      getDocumentContent: { label: "문서 내용 가져오기", desc: "지정된 문서의 상세 내용 가져오기" },
+      knowledgeGraphExtract: { label: "지식 그래프 추출", desc: "텍스트에서 지식 그래프 엔티티 및 관계 추출" },
+    },
+    answerMessages: {
+      emptyAnswerCopy: "현재 답변이 비어 있어 복사할 수 없습니다",
+      copiedToClipboard: "클립보드에 복사되었습니다",
+      copyFailed: "복사 실패, 수동으로 복사해주세요",
+      emptyAnswerSave: "현재 답변이 비어 있어 지식베이스에 저장할 수 없습니다",
+      openedEditor: "편집기를 열었습니다. 지식베이스를 선택한 후 저장하세요",
+    },
   },
   settings: {
     title: "설정",
@@ -379,7 +454,7 @@ export default {
     blacklistLabel: "URL 블랙리스트",
     blacklistDescription:
       "특정 도메인 또는 URL의 검색 결과 제외, 줄당 하나씩. 와일드카드(*)와 정규식(/로 시작하고 끝남) 지원",
-    blacklistPlaceholder: "예시:\n*://*.example.com/*\n/example\\.(net|org)/",
+    blacklistPlaceholder: "예시:\n*://*.example.com/*\n/example\\.(net{'|'}org)/",
     errors: {
       unknown: "알 수 없는 오류",
     },

@@ -205,7 +205,82 @@ export default {
     updatePlan: 'Обновить план',
     webSearchFound: 'Найдено <strong>{count}</strong> результатов веб‑поиска',
     argumentsLabel: 'Параметры',
-    toolFallback: 'Инструмент'
+    toolFallback: 'Инструмент',
+    punctuation: {
+      comma: ', ',
+      list: ', '
+    },
+    kbTooltip: {
+      loading: 'Загрузка...'
+    },
+    toolStatus: {
+      calling: 'Вызов {tool}...',
+      callSuccess: 'Вызов {tool}',
+      callFailed: 'Вызов {tool} не удался',
+      searchKnowledge: {
+        success: 'Поиск по базе знаний',
+        failure: 'Поиск по базе знаний не удался'
+      },
+      webSearch: {
+        success: 'Веб-поиск',
+        failure: 'Веб-поиск не удался'
+      },
+      getDocumentInfo: {
+        success: 'Получение информации о документе',
+        failure: 'Не удалось получить информацию о документе'
+      },
+      thinking: {
+        success: 'Размышление завершено',
+        failure: 'Размышление не удалось'
+      },
+      todoWrite: {
+        success: 'Обновление списка задач',
+        failure: 'Не удалось обновить список задач'
+      }
+    },
+    searchResults: {
+      none: 'Совпадений не найдено',
+      summary: 'Найдено {count} результатов',
+      kbSummary: 'Найдено {count} результатов из {kbCount} файлов'
+    },
+    webSearchResults: {
+      summary: 'Найдено {count} результатов веб‑поиска'
+    },
+    grepResults: {
+      none: 'Совпадений не найдено',
+      summary: 'Найдено {count} совпадений',
+      shown: ' (показано {count})'
+    },
+    manual: {
+      emptyQuestion: '(Вопрос не указан)',
+      emptyAnswer: '(Ответ не указан)',
+      title: 'Фрагмент диалога'
+    },
+    tools: {
+      thinking: { label: 'Размышление', desc: 'Инструмент рефлексивного мышления для решения задач' },
+      todoWrite: { label: 'Планирование', desc: 'Создание структурированных планов исследований' },
+      grepChunks: { label: 'Поиск по ключевым словам', desc: 'Быстрый поиск документов и фрагментов по ключевым словам' },
+      knowledgeSearch: { label: 'Семантический поиск', desc: 'Понимание вопроса и поиск семантически связанного контента' },
+      listKnowledgeChunks: { label: 'Просмотр фрагментов документов', desc: 'Получение полного содержимого фрагментов документов' },
+      queryKnowledgeGraph: { label: 'Запрос к графу знаний', desc: 'Запрос отношений из графа знаний' },
+      getDocumentInfo: { label: 'Получение информации о документе', desc: 'Просмотр метаданных документа' },
+      databaseQuery: { label: 'Запрос к базе данных', desc: 'Запрос информации из базы данных' },
+      dataAnalysis: { label: 'Анализ данных', desc: 'Понимание файлов данных и выполнение анализа данных' },
+      dataSchema: { label: 'Просмотр метаданных', desc: 'Получение метаданных табличных файлов' },
+      searchKnowledge: { label: 'Поиск по базе знаний', desc: 'Поиск соответствующего контента в базе знаний' },
+      webSearch: { label: 'Веб-поиск', desc: 'Поиск информации в интернете' },
+      webFetch: { label: 'Получение веб-страницы', desc: 'Получение содержимого веб-страницы' },
+      getRelatedDocuments: { label: 'Получение связанных документов', desc: 'Получение документов, связанных с текущим' },
+      getDocumentContent: { label: 'Получение содержимого документа', desc: 'Получение подробного содержимого указанного документа' },
+      knowledgeGraphExtract: { label: 'Извлечение графа знаний', desc: 'Извлечение сущностей и отношений графа знаний из текста' }
+    },
+    answerMessages: {
+      emptyAnswerCopy: 'Ответ пуст, копирование невозможно',
+      copiedToClipboard: 'Скопировано в буфер обмена',
+      copyFailed: 'Не удалось скопировать, скопируйте вручную',
+      emptyAnswerSave: 'Ответ пуст, нельзя сохранить в базу знаний',
+      openedEditor: 'Редактор открыт. Выберите базу знаний перед сохранением'
+    }
   },
   settings: {
     title: 'Настройки',
@@ -276,7 +351,7 @@ export default {
     compressionSummary: 'LLM-конспект',
     blacklistLabel: 'Чёрный список URL',
     blacklistDescription: 'Исключите домены или URL из результатов. По одному в строке. Поддерживаются подстановки (*) и регулярные выражения (/pattern/).',
-    blacklistPlaceholder: 'Например:\n*://*.example.com/*\n/example\\.(net|org)/',
+    blacklistPlaceholder: 'Например:\n*://*.example.com/*\n/example\\.(net{\'|\'}org)/',
     errors: {
       unknown: 'Неизвестная ошибка'
     },
