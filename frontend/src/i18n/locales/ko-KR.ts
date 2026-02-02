@@ -454,7 +454,7 @@ export default {
     blacklistLabel: "URL 블랙리스트",
     blacklistDescription:
       "특정 도메인 또는 URL의 검색 결과 제외, 줄당 하나씩. 와일드카드(*)와 정규식(/로 시작하고 끝남) 지원",
-    blacklistPlaceholder: "예시:\n*://*.example.com/*\n/example\\.(net{'|'}org)/",
+    blacklistPlaceholder: "예시:\n*://*.example.com/*\n/example\\.(net|org)/",
     errors: {
       unknown: "알 수 없는 오류",
     },

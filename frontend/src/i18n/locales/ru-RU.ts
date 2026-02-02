@@ -351,7 +351,7 @@ export default {
     compressionSummary: 'LLM-конспект',
     blacklistLabel: 'Чёрный список URL',
     blacklistDescription: 'Исключите домены или URL из результатов. По одному в строке. Поддерживаются подстановки (*) и регулярные выражения (/pattern/).',
-    blacklistPlaceholder: 'Например:\n*://*.example.com/*\n/example\\.(net{\'|\'}org)/',
+    blacklistPlaceholder: 'Например:\n*://*.example.com/*\n/example\\.(net|org)/',
     errors: {
       unknown: 'Неизвестная ошибка'
     },

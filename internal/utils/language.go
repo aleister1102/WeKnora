@@ -13,9 +13,12 @@ func DetectLanguageCode(text string) string {
 	var hasHangul bool
 	var hasCyrillic bool
 	var hasLatin bool
+	var hasJaSpecific bool // 々 (iteration mark), 、 (ideographic comma)
 
 	for _, r := range text {
 		switch {
+		case r == '\u3005' || r == '\u3001':
+			hasJaSpecific = true
 		case unicode.In(r, unicode.Han):
 			hasHan = true
 		case unicode.In(r, unicode.Hiragana):
@@ -31,7 +34,10 @@ func DetectLanguageCode(text string) string {
 		}
 	}
 
-	if hasHiragana || hasKatakana {
+	// Priority: Japanese (Kana/Specifics) > Korean (Hangul) > Chinese (Han)
+	// Note: Pure Kanji text (e.g. "東京都") without Kana or punctuation is ambiguous
+	// and will be classified as "zh" by default, as Han characters are the primary script for Chinese.
+	if hasHiragana || hasKatakana || hasJaSpecific {
 		return "ja"
 	}
 	if hasHangul {

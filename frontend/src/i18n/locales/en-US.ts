@@ -611,7 +611,7 @@ export default {
     compressionSummary: 'LLM Summary',
     blacklistLabel: 'URL Blacklist',
     blacklistDescription: 'Exclude specific domains or URLs from search results. One per line. Supports wildcards (*) and regular expressions (/pattern/).',
-    blacklistPlaceholder: 'For example:\n*://*.example.com/*\n/example\\.(net{\'|\'}org)/',
+    blacklistPlaceholder: 'For example:\n*://*.example.com/*\n/example\\.(net|org)/',
     errors: {
       unknown: 'Unknown error'
     },

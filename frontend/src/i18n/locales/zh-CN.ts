@@ -371,7 +371,7 @@ export default {
     blacklistLabel: "URL 黑名单",
     blacklistDescription:
       "排除特定域名或 URL 的搜索结果，每行一个。支持通配符（*）和正则表达式（以/开头和结尾）",
-    blacklistPlaceholder: "例如：\n*://*.example.com/*\n/example\\.(net{'|'}org)/",
+    blacklistPlaceholder: "例如：\n*://*.example.com/*\n/example\\.(net|org)/",
     errors: {
       unknown: "未知错误",
     },
