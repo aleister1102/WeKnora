@@ -9,14 +9,14 @@
         <div class="info-box">
           <div class="info-header">
             <t-icon name="info-circle" class="info-icon" />
-            <span class="info-title">内置模型</span>
+            <span class="info-title">{{ $t('modelSettings.builtinModels.title') }}</span>
           </div>
           <div class="info-content">
-            <p>内置模型对所有租户可见，敏感信息会被隐藏，且不可编辑或删除。</p>
+            <p>{{ $t('modelSettings.builtinModels.description') }}</p>
             <p class="doc-link">
               <t-icon name="link" class="link-icon" />
               <a href="https://github.com/Tencent/WeKnora/blob/main/docs/BUILTIN_MODELS.md" target="_blank" rel="noopener noreferrer">
-                查看内置模型管理指南
+                {{ $t('modelSettings.builtinModels.linkText') }}
               </a>
             </p>
           </div>
