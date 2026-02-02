@@ -662,4 +662,9 @@ func registerWebSearchProviders(registry *websearch.Registry) {
 	registry.Register(websearch.GoogleProviderInfo(), func() (interfaces.WebSearchProvider, error) {
 		return websearch.NewGoogleProvider()
 	})
+
+	// Register Bing provider
+	registry.Register(websearch.BingProviderInfo(), func() (interfaces.WebSearchProvider, error) {
+		return websearch.NewBingProvider()
+	})
 }
