@@ -165,7 +165,16 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Icon as TIcon, Popup as TPopup } from 'tdesign-vue-next';
-import { listAgents, type CustomAgent, BUILTIN_QUICK_ANSWER_ID, BUILTIN_SMART_REASONING_ID } from '@/api/agent';
+import {
+    listAgents,
+    type CustomAgent,
+    BUILTIN_QUICK_ANSWER_ID,
+    BUILTIN_SMART_REASONING_ID,
+    BUILTIN_DEEP_RESEARCHER_ID,
+    BUILTIN_DATA_ANALYST_ID,
+    BUILTIN_KNOWLEDGE_GRAPH_EXPERT_ID,
+    BUILTIN_DOCUMENT_ASSISTANT_ID
+} from '@/api/agent';
 import AgentAvatar from '@/components/AgentAvatar.vue';
 
 const { t } = useI18n();
@@ -184,6 +193,33 @@ const emit = defineEmits<{
 const agents = ref<CustomAgent[]>([]);
 const dropdownStyle = ref<Record<string, string>>({});
 
+const builtinAgentI18nMap: Record<string, { nameKey: string; descriptionKey: string }> = {
+    [BUILTIN_QUICK_ANSWER_ID]: {
+        nameKey: 'agent.builtinInfo.quickAnswer.name',
+        descriptionKey: 'agent.builtinInfo.quickAnswer.description'
+    },
+    [BUILTIN_SMART_REASONING_ID]: {
+        nameKey: 'agent.builtinInfo.smartReasoning.name',
+        descriptionKey: 'agent.builtinInfo.smartReasoning.description'
+    },
+    [BUILTIN_DEEP_RESEARCHER_ID]: {
+        nameKey: 'agent.builtinInfo.deepResearcher.name',
+        descriptionKey: 'agent.builtinInfo.deepResearcher.description'
+    },
+    [BUILTIN_DATA_ANALYST_ID]: {
+        nameKey: 'agent.builtinInfo.dataAnalyst.name',
+        descriptionKey: 'agent.builtinInfo.dataAnalyst.description'
+    },
+    [BUILTIN_KNOWLEDGE_GRAPH_EXPERT_ID]: {
+        nameKey: 'agent.builtinInfo.knowledgeGraphExpert.name',
+        descriptionKey: 'agent.builtinInfo.knowledgeGraphExpert.description'
+    },
+    [BUILTIN_DOCUMENT_ASSISTANT_ID]: {
+        nameKey: 'agent.builtinInfo.documentAssistant.name',
+        descriptionKey: 'agent.builtinInfo.documentAssistant.description'
+    }
+};
+
 // 内置智能体（从 API 获取，对特定 ID 使用本地化名称）
 const builtinAgents = computed(() => {
   // 从 API 获取的内置智能体
@@ -191,17 +227,12 @@ const builtinAgents = computed(() => {
   
   // 对特定内置智能体使用本地化名称和描述
   return apiBuiltins.map(agent => {
-    if (agent.id === BUILTIN_QUICK_ANSWER_ID) {
+    const i18nInfo = builtinAgentI18nMap[agent.id];
+    if (i18nInfo) {
       return {
         ...agent,
-        name: t('agent.builtinInfo.quickAnswer.name'),
-        description: t('agent.builtinInfo.quickAnswer.description'),
-      };
-    } else if (agent.id === BUILTIN_SMART_REASONING_ID) {
-      return {
-        ...agent,
-        name: t('agent.builtinInfo.smartReasoning.name'),
-        description: t('agent.builtinInfo.smartReasoning.description'),
+        name: t(i18nInfo.nameKey),
+        description: t(i18nInfo.descriptionKey),
       };
     }
     // 其他内置智能体使用 API 返回的名称和描述

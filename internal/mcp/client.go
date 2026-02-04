@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Tencent/WeKnora/internal/logger"
@@ -55,6 +56,7 @@ type ClientConfig struct {
 type mcpGoClient struct {
 	service     *types.MCPService
 	client      *client.Client
+	mu          sync.RWMutex // Protects connected/initialized
 	connected   bool
 	initialized bool
 }
@@ -156,15 +158,33 @@ func (c *mcpGoClient) checkErrorAndDisconnectIfNeeded(err error) {
 
 // Connect establishes connection to the MCP service
 func (c *mcpGoClient) Connect(ctx context.Context) error {
+	c.mu.Lock()
 	if c.connected {
+		c.mu.Unlock()
 		return ErrAlreadyConnected
 	}
+	c.mu.Unlock()
 
 	// Start the client
 	if err := c.client.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start client: %w", err)
 	}
+
+	// Register connection lost handler for SSE transport
+	// This ensures we detect when the SSE stream dies (server restart, network issue)
+	c.client.OnConnectionLost(func(err error) {
+		c.mu.Lock()
+		c.connected = false
+		c.initialized = false
+		c.mu.Unlock()
+		// Use context.Background() since this callback may run after ctx is cancelled
+		logger.GetLogger(context.Background()).Warnf("MCP connection lost for service %s: %v", c.service.Name, err)
+	})
+
+	c.mu.Lock()
 	c.connected = true
+	c.mu.Unlock()
+
 	if c.service.TransportType == types.MCPTransportStdio {
 		logger.GetLogger(ctx).Infof("MCP stdio client connected: %s %v",
 			c.service.StdioConfig.Command, c.service.StdioConfig.Args)
@@ -176,24 +196,33 @@ func (c *mcpGoClient) Connect(ctx context.Context) error {
 
 // Disconnect closes the connection
 func (c *mcpGoClient) Disconnect() error {
+	c.mu.Lock()
 	if !c.connected {
+		c.mu.Unlock()
 		return nil
 	}
+	c.mu.Unlock()
 
 	// Close the client
 	if c.client != nil {
 		c.client.Close()
 	}
+
+	c.mu.Lock()
 	c.connected = false
 	c.initialized = false
+	c.mu.Unlock()
 	return nil
 }
 
 // Initialize performs the MCP initialize handshake
 func (c *mcpGoClient) Initialize(ctx context.Context) (*InitializeResult, error) {
+	c.mu.RLock()
 	if !c.connected {
+		c.mu.RUnlock()
 		return nil, ErrNotConnected
 	}
+	c.mu.RUnlock()
 
 	// Initialize the client
 	req := mcp.InitializeRequest{
@@ -213,7 +242,9 @@ func (c *mcpGoClient) Initialize(ctx context.Context) (*InitializeResult, error)
 		return nil, fmt.Errorf("failed to initialize: %w", err)
 	}
 
+	c.mu.Lock()
 	c.initialized = true
+	c.mu.Unlock()
 
 	return &InitializeResult{
 		ProtocolVersion: result.ProtocolVersion,
@@ -226,7 +257,10 @@ func (c *mcpGoClient) Initialize(ctx context.Context) (*InitializeResult, error)
 
 // ListTools retrieves the list of available tools
 func (c *mcpGoClient) ListTools(ctx context.Context) ([]*types.MCPTool, error) {
-	if !c.initialized {
+	c.mu.RLock()
+	initialized := c.initialized
+	c.mu.RUnlock()
+	if !initialized {
 		return nil, ErrNotConnected
 	}
 
@@ -253,7 +287,10 @@ func (c *mcpGoClient) ListTools(ctx context.Context) ([]*types.MCPTool, error) {
 
 // ListResources retrieves the list of available resources
 func (c *mcpGoClient) ListResources(ctx context.Context) ([]*types.MCPResource, error) {
-	if !c.initialized {
+	c.mu.RLock()
+	initialized := c.initialized
+	c.mu.RUnlock()
+	if !initialized {
 		return nil, ErrNotConnected
 	}
 
@@ -280,7 +317,10 @@ func (c *mcpGoClient) ListResources(ctx context.Context) ([]*types.MCPResource, 
 
 // CallTool calls a tool on the MCP service
 func (c *mcpGoClient) CallTool(ctx context.Context, name string, args map[string]interface{}) (*CallToolResult, error) {
-	if !c.initialized {
+	c.mu.RLock()
+	initialized := c.initialized
+	c.mu.RUnlock()
+	if !initialized {
 		return nil, ErrNotConnected
 	}
 
@@ -322,7 +362,10 @@ func (c *mcpGoClient) CallTool(ctx context.Context, name string, args map[string
 
 // ReadResource reads a resource from the MCP service
 func (c *mcpGoClient) ReadResource(ctx context.Context, uri string) (*ReadResourceResult, error) {
-	if !c.initialized {
+	c.mu.RLock()
+	initialized := c.initialized
+	c.mu.RUnlock()
+	if !initialized {
 		return nil, ErrNotConnected
 	}
 
@@ -363,6 +406,8 @@ func (c *mcpGoClient) ReadResource(ctx context.Context, uri string) (*ReadResour
 
 // IsConnected returns true if the client is connected
 func (c *mcpGoClient) IsConnected() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.connected
 }
 

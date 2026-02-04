@@ -60,7 +60,7 @@
           <div class="import-result-header">
             <div class="header-left">
               <t-icon name="check-circle-filled" size="20px" class="result-icon" />
-              <span class="result-title">最近导入结果</span>
+              <span class="result-title">{{ $t('knowledgeEditor.faqImport.recentResult') }}</span>
             </div>
             <div class="header-right">
               <span class="result-time">{{ formatImportTime(importResult.imported_at) }}</span>
@@ -78,16 +78,16 @@
           <div class="import-result-body">
             <div class="import-result-stats">
               <div class="stat-item">
-                <span class="stat-label">导入数据</span>
-                <span class="stat-value">{{ importResult.total_entries }}条</span>
+                <span class="stat-label">{{ $t('knowledgeEditor.faqImport.importData') }}</span>
+                <span class="stat-value">{{ importResult.total_entries }}{{ $t('knowledgeBase.itemCount') || '条' }}</span>
               </div>
               <div class="stat-item success">
-                <span class="stat-label">成功</span>
-                <span class="stat-value">{{ importResult.success_count }}条</span>
+                <span class="stat-label">{{ $t('knowledgeEditor.faqImport.success') }}</span>
+                <span class="stat-value">{{ importResult.success_count }}{{ $t('knowledgeBase.itemCount') || '条' }}</span>
               </div>
               <div v-if="importResult.failed_count > 0" class="stat-item failed">
-                <span class="stat-label">失败</span>
-                <span class="stat-value">{{ importResult.failed_count }}条</span>
+                <span class="stat-label">{{ $t('knowledgeEditor.faqImport.failed') }}</span>
+                <span class="stat-value">{{ importResult.failed_count }}{{ $t('knowledgeBase.itemCount') || '条' }}</span>
                 <t-button
                   v-if="importResult.failed_entries_url"
                   variant="outline"
@@ -97,17 +97,17 @@
                   @click="downloadFailedEntries"
                 >
                   <t-icon name="download" size="14px" />
-                  下载原因
+                  {{ $t('knowledgeEditor.faqImport.downloadReason') }}
                 </t-button>
               </div>
               <div v-if="importResult.skipped_count > 0" class="stat-item skipped">
-                <span class="stat-label">跳过</span>
-                <span class="stat-value">{{ importResult.skipped_count }}条</span>
+                <span class="stat-label">{{ $t('knowledgeEditor.faqImport.skipped') }}</span>
+                <span class="stat-value">{{ importResult.skipped_count }}{{ $t('knowledgeBase.itemCount') || '条' }}</span>
               </div>
             </div>
             <div class="import-mode-tag">
               <t-tag size="small" variant="light" theme="success">
-                {{ importResult.import_mode === 'append' ? '追加模式' : '替换模式' }}
+                {{ importResult.import_mode === 'append' ? $t('knowledgeEditor.faqImport.appendModeTag') : $t('knowledgeEditor.faqImport.replaceModeTag') }}
               </t-tag>
             </div>
           </div>
@@ -132,14 +132,14 @@
                 }"
               />
               <span class="progress-title">
-                {{ importState.taskStatus.status === 'running' ? '导入中...' : 
-                   importState.taskStatus.status === 'success' ? '导入完成' : 
-                   importState.taskStatus.status === 'failed' ? '导入失败' : '等待中...' }}
+                {{ importState.taskStatus.status === 'running' ? $t('knowledgeEditor.faqImport.importing') : 
+                   importState.taskStatus.status === 'success' ? $t('knowledgeEditor.faqImport.importCompleted') : 
+                   importState.taskStatus.status === 'failed' ? $t('knowledgeEditor.faqImport.importFailed') : $t('knowledgeEditor.faqImport.waiting') }}
               </span>
             </div>
             <div class="progress-right">
               <span class="progress-count">
-                {{ importState.taskStatus.processed }}/{{ importState.taskStatus.total }} 条
+                {{ importState.taskStatus.processed }}/{{ importState.taskStatus.total }} {{ $t('knowledgeBase.itemCount') || '条' }}
               </span>
               <t-button
                 v-if="importState.taskStatus.status === 'success' || importState.taskStatus.status === 'failed'"
@@ -915,7 +915,7 @@
                   :disabled="importState.taskStatus?.status === 'running'"
                 >
                   {{ importState.taskStatus?.status === 'success' ? $t('common.close') : 
-                     importState.taskStatus?.status === 'failed' ? '重试' :
+                     importState.taskStatus?.status === 'failed' ? $t('common.retry') :
                      $t('knowledgeEditor.faqImport.importButton') }}
                 </t-button>
               </div>

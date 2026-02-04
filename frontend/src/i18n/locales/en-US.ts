@@ -48,6 +48,7 @@ export default {
     tagPlaceholder: 'Please select a category',
     noTags: 'No categories',
     upload: 'Upload File',
+    itemCount: ' items',
     uploadSuccess: 'File uploaded successfully!',
     uploadFailed: 'File upload failed!',
     docActionUnsupported: 'This knowledge base type does not support this action',
@@ -977,6 +978,7 @@ export default {
     deleteFailed: 'Delete failed',
     file: 'File',
     knowledgeBase: 'Knowledge Base',
+    retry: 'Retry',
     noResult: 'No results',
   },
   file: {
@@ -1346,6 +1348,18 @@ export default {
       downloadExampleJSON: 'Download JSON Example',
       downloadExampleCSV: 'Download CSV Example',
       downloadExampleExcel: 'Download Excel Example',
+      recentResult: 'Recent Import Result',
+      importData: 'Import Data',
+      success: 'Success',
+      failed: 'Failed',
+      skipped: 'Skipped',
+      downloadReason: 'Download Reason',
+      appendModeTag: 'Append Mode',
+      replaceModeTag: 'Replace Mode',
+      importing: 'Importing...',
+      importCompleted: 'Import Completed',
+      importFailed: 'Import Failed',
+      waiting: 'Waiting...',
     },
     faqExport: {
       exportButton: 'Export CSV',
@@ -2187,6 +2201,11 @@ export default {
   modelSettings: {
     title: 'Model Settings',
     description: 'Manage different types of AI models, including local Ollama and remote APIs',
+    builtinModels: {
+      title: 'Built-in Models',
+      description: 'Built-in models are visible to all tenants, sensitive information is hidden, and they cannot be edited or deleted.',
+      linkText: 'View Built-in Models Management Guide',
+    },
     actions: {
       addModel: 'Add Model',
       setDefault: 'Set as Default'

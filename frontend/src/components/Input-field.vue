@@ -16,7 +16,11 @@ import {
     listAgents,
     type CustomAgent,
     BUILTIN_QUICK_ANSWER_ID,
-    BUILTIN_SMART_REASONING_ID
+    BUILTIN_SMART_REASONING_ID,
+    BUILTIN_DEEP_RESEARCHER_ID,
+    BUILTIN_DATA_ANALYST_ID,
+    BUILTIN_KNOWLEDGE_GRAPH_EXPERT_ID,
+    BUILTIN_DOCUMENT_ASSISTANT_ID
 } from '@/api/agent';
 import { getTenantWebSearchConfig } from '@/api/web-search';
 import {
@@ -41,20 +45,59 @@ const agentModeDropdownStyle = ref<Record<string, string>>({});
 
 // 智能体相关状态
 const agents = ref<CustomAgent[]>([]);
+
+const builtinAgentI18nMap: Record<string, { nameKey: string; descriptionKey: string }> = {
+    [BUILTIN_QUICK_ANSWER_ID]: {
+        nameKey: 'agent.builtinInfo.quickAnswer.name',
+        descriptionKey: 'agent.builtinInfo.quickAnswer.description'
+    },
+    [BUILTIN_SMART_REASONING_ID]: {
+        nameKey: 'agent.builtinInfo.smartReasoning.name',
+        descriptionKey: 'agent.builtinInfo.smartReasoning.description'
+    },
+    [BUILTIN_DEEP_RESEARCHER_ID]: {
+        nameKey: 'agent.builtinInfo.deepResearcher.name',
+        descriptionKey: 'agent.builtinInfo.deepResearcher.description'
+    },
+    [BUILTIN_DATA_ANALYST_ID]: {
+        nameKey: 'agent.builtinInfo.dataAnalyst.name',
+        descriptionKey: 'agent.builtinInfo.dataAnalyst.description'
+    },
+    [BUILTIN_KNOWLEDGE_GRAPH_EXPERT_ID]: {
+        nameKey: 'agent.builtinInfo.knowledgeGraphExpert.name',
+        descriptionKey: 'agent.builtinInfo.knowledgeGraphExpert.description'
+    },
+    [BUILTIN_DOCUMENT_ASSISTANT_ID]: {
+        nameKey: 'agent.builtinInfo.documentAssistant.name',
+        descriptionKey: 'agent.builtinInfo.documentAssistant.description'
+    }
+};
+
 const selectedAgentId = computed({
     get: () => settingsStore.selectedAgentId || BUILTIN_QUICK_ANSWER_ID,
     set: (val: string) => settingsStore.selectAgent(val)
 });
 const selectedAgent = computed(() => {
-    return (
-        agents.value.find(a => a.id === selectedAgentId.value) ||
-        ({
-            id: BUILTIN_QUICK_ANSWER_ID,
-            name: t('agent.builtinInfo.quickAnswer.name'),
-            is_builtin: true,
-            config: { agent_mode: 'quick-answer' as const }
-        } as CustomAgent)
-    );
+    const found = agents.value.find(a => a.id === selectedAgentId.value);
+    if (found) {
+        // Apply localization for built-in agents
+        const i18nInfo = builtinAgentI18nMap[found.id];
+        if (i18nInfo) {
+            return {
+                ...found,
+                name: t(i18nInfo.nameKey),
+                description: t(i18nInfo.descriptionKey)
+            };
+        }
+        return found;
+    }
+    return ({
+        id: BUILTIN_QUICK_ANSWER_ID,
+        name: t('agent.builtinInfo.quickAnswer.name'),
+        description: t('agent.builtinInfo.quickAnswer.description'),
+        is_builtin: true,
+        config: { agent_mode: 'quick-answer' as const }
+    } as CustomAgent);
 });
 
 // 判断是否为自定义智能体（非内置）

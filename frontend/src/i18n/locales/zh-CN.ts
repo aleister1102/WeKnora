@@ -48,6 +48,7 @@ export default {
     tagPlaceholder: "请选择分类",
     noTags: "暂无分类",
     upload: "上传文件",
+    itemCount: "条",
     uploadSuccess: "文件上传成功！",
     uploadFailed: "文件上传失败！",
     fileExists: "文件已存在",
@@ -728,6 +729,7 @@ export default {
     deleteFailed: "删除失败",
     file: "文件",
     knowledgeBase: "知识库",
+    retry: "重试",
     noResult: "无结果",
   },
   agent: {
@@ -1750,6 +1752,18 @@ export default {
       downloadExampleJSON: "下载 JSON 示例",
       downloadExampleCSV: "下载 CSV 示例",
       downloadExampleExcel: "下载 Excel 示例",
+      recentResult: "最近导入结果",
+      importData: "导入数据",
+      success: "成功",
+      failed: "失败",
+      skipped: "跳过",
+      downloadReason: "下载原因",
+      appendModeTag: "追加模式",
+      replaceModeTag: "替换模式",
+      importing: "导入中...",
+      importCompleted: "导入完成",
+      importFailed: "导入失败",
+      waiting: "等待中...",
     },
     faqExport: {
       exportButton: "导出 CSV",
@@ -2190,6 +2204,11 @@ export default {
   modelSettings: {
     title: "模型配置",
     description: "管理不同类型的 AI 模型，支持 Ollama 本地模型和远程 API",
+    builtinModels: {
+      title: "内置模型",
+      description: "内置模型对所有租户可见，敏感信息会被隐藏，且不可编辑或删除。",
+      linkText: "查看内置模型管理指南",
+    },
     actions: {
       addModel: "添加模型",
       setDefault: "设为默认",
