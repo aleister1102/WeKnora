@@ -70,13 +70,12 @@ func NewGenericChat(config *ChatConfig) (*GenericChat, error) {
 
 // customizeRequest 自定义 Generic 请求
 func (c *GenericChat) customizeRequest(req *openai.ChatCompletionRequest, opts *ChatOptions, isStream bool) (any, bool) {
-	// Generic provider（如 vLLM）使用 ChatTemplateKwargs 传递 thinking 参数
-	thinking := false
-	if opts != nil && opts.Thinking != nil {
-		thinking = *opts.Thinking
+	if opts == nil || opts.Thinking == nil || !*opts.Thinking {
+		return nil, false
 	}
+	// Generic provider（如 vLLM）使用 ChatTemplateKwargs 传递 thinking 参数
 	req.ChatTemplateKwargs = map[string]interface{}{
-		"enable_thinking": thinking,
+		"enable_thinking": true,
 	}
 	return nil, false // 使用标准请求（已修改）
 }

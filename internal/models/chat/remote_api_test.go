@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Tencent/WeKnora/internal/types"
+	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -124,4 +125,26 @@ func TestRemoteAPIChat(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestGenericChatCustomizeRequest(t *testing.T) {
+	generic := &GenericChat{RemoteAPIChat: &RemoteAPIChat{}}
+
+	t.Run("OmitChatTemplateKwargsWhenThinkingNil", func(t *testing.T) {
+		req := &openai.ChatCompletionRequest{}
+		customReq, useRawHTTP := generic.customizeRequest(req, &ChatOptions{}, false)
+		assert.Nil(t, customReq)
+		assert.False(t, useRawHTTP)
+		assert.Nil(t, req.ChatTemplateKwargs)
+	})
+
+	t.Run("SetChatTemplateKwargsWhenThinkingTrue", func(t *testing.T) {
+		thinking := true
+		req := &openai.ChatCompletionRequest{}
+		customReq, useRawHTTP := generic.customizeRequest(req, &ChatOptions{Thinking: &thinking}, false)
+		assert.Nil(t, customReq)
+		assert.False(t, useRawHTTP)
+		assert.NotNil(t, req.ChatTemplateKwargs)
+		assert.Equal(t, true, req.ChatTemplateKwargs["enable_thinking"])
+	})
 }

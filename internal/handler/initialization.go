@@ -1607,7 +1607,6 @@ func (h *InitializationHandler) checkRemoteModelConnection(ctx context.Context,
 	// 构造测试选项
 	testOptions := &chat.ChatOptions{
 		MaxTokens: 1,
-		Thinking:  &[]bool{false}[0], // for dashscope.aliyuncs qwen3-32b
 	}
 
 	// 使用聊天实例进行测试
