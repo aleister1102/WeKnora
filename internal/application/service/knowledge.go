@@ -765,22 +765,39 @@ func (s *knowledgeService) DeleteKnowledge(ctx context.Context, id string) error
 	// Delete knowledge embeddings from vector store
 	wg.Go(func() error {
 		tenantInfo := ctx.Value(types.TenantInfoContextKey).(*types.Tenant)
+		currentTenantID := ctx.Value(types.TenantIDContextKey).(uint64)
 		retrieveEngine, err := retriever.NewCompositeRetrieveEngine(
 			s.retrieveEngine,
 			tenantInfo.GetEffectiveEngines(),
 		)
 		if err != nil {
-			logger.GetLogger(ctx).WithField("error", err).Errorf("DeleteKnowledge delete knowledge embedding failed")
-			return err
+			logger.GetLogger(ctx).WithField("error", err).Warnf("DeleteKnowledge init retrieve engine failed, skipping embedding delete")
+			return nil
 		}
-		embeddingModel, err := s.modelService.GetEmbeddingModel(ctx, knowledge.EmbeddingModelID)
-		if err != nil {
-			logger.GetLogger(ctx).WithField("error", err).Errorf("DeleteKnowledge delete knowledge embedding failed")
-			return err
+
+		modelTenantID := knowledge.TenantID
+		if modelTenantID == 0 {
+			modelTenantID = currentTenantID
+		}
+
+		embeddingModel, modelErr := s.modelService.GetEmbeddingModelForTenant(ctx, knowledge.EmbeddingModelID, modelTenantID)
+		if modelErr != nil {
+			kb, kbErr := s.kbService.GetKnowledgeBaseByIDOnly(ctx, knowledge.KnowledgeBaseID)
+			if kbErr == nil && kb != nil && kb.EmbeddingModelID != "" && kb.EmbeddingModelID != knowledge.EmbeddingModelID {
+				embeddingModel, modelErr = s.modelService.GetEmbeddingModelForTenant(ctx, kb.EmbeddingModelID, kb.TenantID)
+			}
+		}
+		if modelErr != nil {
+			logger.GetLogger(ctx).
+				WithField("error", modelErr).
+				WithField("knowledge_id", knowledge.ID).
+				WithField("embedding_model_id", knowledge.EmbeddingModelID).
+				Warnf("DeleteKnowledge embedding model not found, skipping embedding delete")
+			return nil
 		}
 		if err := retrieveEngine.DeleteByKnowledgeIDList(ctx, []string{knowledge.ID}, embeddingModel.GetDimensions(), knowledge.Type); err != nil {
-			logger.GetLogger(ctx).WithField("error", err).Errorf("DeleteKnowledge delete knowledge embedding failed")
-			return err
+			logger.GetLogger(ctx).WithField("error", err).Warnf("DeleteKnowledge embedding delete failed, skipping")
+			return nil
 		}
 		return nil
 	})
@@ -854,35 +871,43 @@ func (s *knowledgeService) DeleteKnowledgeList(ctx context.Context, ids []string
 	// 2. Delete knowledge embeddings from vector store
 	wg.Go(func() error {
 		tenantInfo := ctx.Value(types.TenantInfoContextKey).(*types.Tenant)
+		currentTenantID := ctx.Value(types.TenantIDContextKey).(uint64)
 		retrieveEngine, err := retriever.NewCompositeRetrieveEngine(
 			s.retrieveEngine,
 			tenantInfo.GetEffectiveEngines(),
 		)
 		if err != nil {
-			logger.GetLogger(ctx).WithField("error", err).Errorf("DeleteKnowledge delete knowledge embedding failed")
-			return err
+			logger.GetLogger(ctx).WithField("error", err).Warnf("DeleteKnowledgeList init retrieve engine failed, skipping embedding delete")
+			return nil
 		}
-		// Group by EmbeddingModelID and Type
-		type groupKey struct {
-			EmbeddingModelID string
-			Type             string
-		}
-		group := map[groupKey][]string{}
+
 		for _, knowledge := range knowledgeList {
-			key := groupKey{EmbeddingModelID: knowledge.EmbeddingModelID, Type: knowledge.Type}
-			group[key] = append(group[key], knowledge.ID)
-		}
-		for key, knowledgeIDs := range group {
-			embeddingModel, err := s.modelService.GetEmbeddingModel(ctx, key.EmbeddingModelID)
-			if err != nil {
-				logger.GetLogger(ctx).WithField("error", err).Errorf("DeleteKnowledge get embedding model failed")
-				return err
+			modelTenantID := knowledge.TenantID
+			if modelTenantID == 0 {
+				modelTenantID = currentTenantID
 			}
-			if err := retrieveEngine.DeleteByKnowledgeIDList(ctx, knowledgeIDs, embeddingModel.GetDimensions(), key.Type); err != nil {
+
+			embeddingModel, modelErr := s.modelService.GetEmbeddingModelForTenant(ctx, knowledge.EmbeddingModelID, modelTenantID)
+			if modelErr != nil {
+				kb, kbErr := s.kbService.GetKnowledgeBaseByIDOnly(ctx, knowledge.KnowledgeBaseID)
+				if kbErr == nil && kb != nil && kb.EmbeddingModelID != "" && kb.EmbeddingModelID != knowledge.EmbeddingModelID {
+					embeddingModel, modelErr = s.modelService.GetEmbeddingModelForTenant(ctx, kb.EmbeddingModelID, kb.TenantID)
+				}
+			}
+			if modelErr != nil {
+				logger.GetLogger(ctx).
+					WithField("error", modelErr).
+					WithField("knowledge_id", knowledge.ID).
+					WithField("embedding_model_id", knowledge.EmbeddingModelID).
+					Warnf("DeleteKnowledgeList embedding model not found, skipping embedding delete")
+				continue
+			}
+
+			if err := retrieveEngine.DeleteByKnowledgeIDList(ctx, []string{knowledge.ID}, embeddingModel.GetDimensions(), knowledge.Type); err != nil {
 				logger.GetLogger(ctx).
 					WithField("error", err).
-					Errorf("DeleteKnowledge delete knowledge embedding failed")
-				return err
+					Warnf("DeleteKnowledgeList embedding delete failed, skipping")
+				continue
 			}
 		}
 		return nil
@@ -6266,6 +6291,7 @@ func (s *knowledgeService) cleanupKnowledgeResources(ctx context.Context, knowle
 	}
 
 	tenantInfo := ctx.Value(types.TenantInfoContextKey).(*types.Tenant)
+	currentTenantID := ctx.Value(types.TenantIDContextKey).(uint64)
 	if knowledge.EmbeddingModelID != "" {
 		retrieveEngine, err := retriever.NewCompositeRetrieveEngine(
 			s.retrieveEngine,
@@ -6275,14 +6301,27 @@ func (s *knowledgeService) cleanupKnowledgeResources(ctx context.Context, knowle
 			logger.GetLogger(ctx).WithField("error", err).Error("Failed to init retrieve engine during cleanup")
 			cleanupErr = errors.Join(cleanupErr, err)
 		} else {
-			embeddingModel, modelErr := s.modelService.GetEmbeddingModel(ctx, knowledge.EmbeddingModelID)
+			modelTenantID := knowledge.TenantID
+			if modelTenantID == 0 {
+				modelTenantID = currentTenantID
+			}
+
+			embeddingModel, modelErr := s.modelService.GetEmbeddingModelForTenant(ctx, knowledge.EmbeddingModelID, modelTenantID)
 			if modelErr != nil {
-				logger.GetLogger(ctx).WithField("error", modelErr).Error("Failed to get embedding model during cleanup")
-				cleanupErr = errors.Join(cleanupErr, modelErr)
+				kb, kbErr := s.kbService.GetKnowledgeBaseByIDOnly(ctx, knowledge.KnowledgeBaseID)
+				if kbErr == nil && kb != nil && kb.EmbeddingModelID != "" && kb.EmbeddingModelID != knowledge.EmbeddingModelID {
+					embeddingModel, modelErr = s.modelService.GetEmbeddingModelForTenant(ctx, kb.EmbeddingModelID, kb.TenantID)
+				}
+			}
+			if modelErr != nil {
+				logger.GetLogger(ctx).
+					WithField("error", modelErr).
+					WithField("knowledge_id", knowledge.ID).
+					WithField("embedding_model_id", knowledge.EmbeddingModelID).
+					Warn("Failed to get embedding model during cleanup, skipping embedding delete")
 			} else {
 				if err := retrieveEngine.DeleteByKnowledgeIDList(ctx, []string{knowledge.ID}, embeddingModel.GetDimensions(), knowledge.Type); err != nil {
-					logger.GetLogger(ctx).WithField("error", err).Error("Failed to delete manual knowledge index")
-					cleanupErr = errors.Join(cleanupErr, err)
+					logger.GetLogger(ctx).WithField("error", err).Warn("Failed to delete manual knowledge index during cleanup, skipping")
 				}
 			}
 		}
