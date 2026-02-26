@@ -45,6 +45,7 @@ type sessionService struct {
 	chunkService         interfaces.ChunkService          // Service for chunk operations
 	webSearchStateRepo   interfaces.WebSearchStateService // Service for web search state
 	kbShareService       interfaces.KBShareService        // Service for KB sharing operations
+	memoryService        interfaces.MemoryService         // Service for memory operations
 }
 
 // NewSessionService creates a new session service instance with all required dependencies
@@ -61,6 +62,7 @@ func NewSessionService(cfg *config.Config,
 	sessionStorage llmcontext.ContextStorage,
 	webSearchStateRepo interfaces.WebSearchStateService,
 	kbShareService interfaces.KBShareService,
+	memoryService interfaces.MemoryService,
 ) interfaces.SessionService {
 	return &sessionService{
 		cfg:                  cfg,
@@ -76,6 +78,7 @@ func NewSessionService(cfg *config.Config,
 		sessionStorage:       sessionStorage,
 		webSearchStateRepo:   webSearchStateRepo,
 		kbShareService:       kbShareService,
+		memoryService:        memoryService,
 	}
 }
 
@@ -219,6 +222,38 @@ func (s *sessionService) DeleteSession(ctx context.Context, id string) error {
 		logger.ErrorWithFields(ctx, err, map[string]interface{}{
 			"session_id": id,
 			"tenant_id":  tenantID,
+		})
+		return err
+	}
+
+	return nil
+}
+
+// BatchDeleteSessions deletes multiple sessions by IDs
+func (s *sessionService) BatchDeleteSessions(ctx context.Context, ids []string) error {
+	if len(ids) == 0 {
+		logger.Error(ctx, "Failed to batch delete sessions: IDs list is empty")
+		return errors.New("session ids are required")
+	}
+
+	// Get tenant ID from context
+	tenantID := ctx.Value(types.TenantIDContextKey).(uint64)
+
+	// Cleanup associated resources for each session
+	for _, id := range ids {
+		if err := s.webSearchStateRepo.DeleteWebSearchTempKBState(ctx, id); err != nil {
+			logger.Warnf(ctx, "Failed to cleanup temporary KB for session %s: %v", id, err)
+		}
+		if err := s.sessionStorage.Delete(ctx, id); err != nil {
+			logger.Warnf(ctx, "Failed to cleanup conversation context for session %s: %v", id, err)
+		}
+	}
+
+	// Batch delete sessions from repository
+	if err := s.sessionRepo.BatchDelete(ctx, tenantID, ids); err != nil {
+		logger.ErrorWithFields(ctx, err, map[string]interface{}{
+			"session_ids": ids,
+			"tenant_id":   tenantID,
 		})
 		return err
 	}
@@ -417,13 +452,15 @@ func (s *sessionService) KnowledgeQA(
 	webSearchEnabled bool,
 	eventBus *event.EventBus,
 	customAgent *types.CustomAgent,
+	enableMemory bool,
 ) error {
 	logger.Infof(
 		ctx,
-		"Knowledge base question answering parameters, session ID: %s, query: %s, webSearchEnabled: %v",
+		"Knowledge base question answering parameters, session ID: %s, query: %s, webSearchEnabled: %v, enableMemory: %v",
 		session.ID,
 		query,
 		webSearchEnabled,
+		enableMemory,
 	)
 
 	// Use custom agent's knowledge bases only if request didn't specify any
@@ -614,10 +651,15 @@ func (s *sessionService) KnowledgeQA(
 		chatModelID,
 		len(searchTargets),
 	)
+
+	// Get UserID from context
+	userID, _ := ctx.Value(types.UserIDContextKey).(string)
+
 	chatManage := &types.ChatManage{
 		Query:                query,
 		RewriteQuery:         query,
 		SessionID:            session.ID,
+		UserID:               userID,
 		MessageID:            assistantMessageID, // NEW: For event emission in pipeline
 		KnowledgeBaseIDs:     knowledgeBaseIDs,   // Multi-KB support
 		KnowledgeIDs:         knowledgeIDs,       // Specific knowledge (file) IDs
@@ -636,6 +678,7 @@ func (s *sessionService) KnowledgeQA(
 		FallbackPrompt:       fallbackPrompt,
 		EventBus:             eventBus.AsEventBusInterface(), // NEW: For pipeline to emit events directly
 		WebSearchEnabled:     webSearchEnabled,
+		EnableMemory:         enableMemory,      // Enable memory feature
 		TenantID:             retrievalTenantID, // Effective tenant for retrieval (shared agent = agent's tenant)
 		RewritePromptSystem:  rewritePromptSystem,
 		RewritePromptUser:    rewritePromptUser,
@@ -1135,9 +1178,11 @@ func (s *sessionService) SearchKnowledge(ctx context.Context,
 	}
 
 	// Create default retrieval parameters
+	userID, _ := ctx.Value(types.UserIDContextKey).(string)
 	chatManage := &types.ChatManage{
 		Query:            query,
 		RewriteQuery:     query,
+		UserID:           userID,
 		KnowledgeBaseIDs: knowledgeBaseIDs,
 		KnowledgeIDs:     knowledgeIDs,
 		SearchTargets:    searchTargets,

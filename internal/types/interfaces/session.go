@@ -21,6 +21,8 @@ type SessionService interface {
 	UpdateSession(ctx context.Context, session *types.Session) error
 	// DeleteSession deletes a session
 	DeleteSession(ctx context.Context, id string) error
+	// BatchDeleteSessions deletes multiple sessions by IDs
+	BatchDeleteSessions(ctx context.Context, ids []string) error
 	// GenerateTitle generates a title for the current conversation
 	// modelID: optional model ID to use for title generation (if empty, uses first available KnowledgeQA model)
 	GenerateTitle(ctx context.Context, session *types.Session, messages []types.Message, modelID string) (string, error)
@@ -34,11 +36,12 @@ type SessionService interface {
 	// summaryModelID: optional summary model ID override (if empty, uses session/KB default)
 	// webSearchEnabled: whether to enable web search to supplement knowledge base results
 	// customAgent: optional custom agent for config override (multiTurnEnabled, historyTurns)
+	// enableMemory: whether to enable memory feature for this request
 	// Events are emitted through eventBus (references, answer chunks, completion)
 	KnowledgeQA(ctx context.Context,
 		session *types.Session, query string, knowledgeBaseIDs []string, knowledgeIDs []string,
 		assistantMessageID string, summaryModelID string, webSearchEnabled bool, eventBus *event.EventBus,
-		customAgent *types.CustomAgent,
+		customAgent *types.CustomAgent, enableMemory bool,
 	) error
 	// KnowledgeQAByEvent performs knowledge-based question answering by event
 	KnowledgeQAByEvent(ctx context.Context, chatManage *types.ChatManage, eventList []types.EventType) error
@@ -79,4 +82,6 @@ type SessionRepository interface {
 	Update(ctx context.Context, session *types.Session) error
 	// Delete deletes a session
 	Delete(ctx context.Context, tenantID uint64, id string) error
+	// BatchDelete deletes multiple sessions by IDs
+	BatchDelete(ctx context.Context, tenantID uint64, ids []string) error
 }
