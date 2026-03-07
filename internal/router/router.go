@@ -1,6 +1,11 @@
 package router
 
 import (
+	"context"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -12,6 +17,7 @@ import (
 	"github.com/Tencent/WeKnora/internal/config"
 	"github.com/Tencent/WeKnora/internal/handler"
 	"github.com/Tencent/WeKnora/internal/handler/session"
+	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/middleware"
 	"github.com/Tencent/WeKnora/internal/types/interfaces"
 
@@ -55,6 +61,7 @@ type RouterParams struct {
 // NewRouter 创建新的路由
 func NewRouter(params RouterParams) *gin.Engine {
 	r := gin.New()
+	r.ContextWithFallback = true
 
 	// CORS 中间件应放在最前面
 	r.Use(cors.New(cors.Config{
@@ -88,11 +95,19 @@ func NewRouter(params RouterParams) *gin.Engine {
 		))
 	}
 
+	// 本地存储文件服务（无需认证，用于 <img> 等标签访问图片）
+	serveLocalFiles(r)
+
+	// 前端静态文件（仅 Lite 版本内嵌前端）
+	if handler.Edition == "lite" {
+		serveFrontendStatic(r)
+	}
+
 	// 认证中间件
 	r.Use(middleware.Auth(params.TenantService, params.UserService, params.Config))
 
 	// 添加OpenTelemetry追踪中间件
-	r.Use(middleware.TracingMiddleware())
+	// r.Use(middleware.TracingMiddleware())
 
 	// 需要认证的API路由
 	v1 := r.Group("/api/v1")
@@ -173,6 +188,8 @@ func RegisterKnowledgeRoutes(r *gin.RouterGroup, handler *handler.KnowledgeHandl
 		k.POST("/:id/reparse", handler.ReparseKnowledge)
 		// 获取知识文件
 		k.GET("/:id/download", handler.DownloadKnowledgeFile)
+		// 预览知识文件（内联显示，返回正确 Content-Type）
+		k.GET("/:id/preview", handler.PreviewKnowledgeFile)
 		// 更新图像分块信息
 		k.PUT("/image/:id/:chunk_id", handler.UpdateImageInfo)
 		// 批量更新知识标签
@@ -389,6 +406,11 @@ func RegisterSystemRoutes(r *gin.RouterGroup, handler *handler.SystemHandler) {
 	systemRoutes := r.Group("/system")
 	{
 		systemRoutes.GET("/info", handler.GetSystemInfo)
+		systemRoutes.GET("/parser-engines", handler.ListParserEngines)
+		systemRoutes.POST("/parser-engines/check", handler.CheckParserEngines)
+		systemRoutes.POST("/docreader/reconnect", handler.ReconnectDocReader)
+		systemRoutes.GET("/storage-engine-status", handler.GetStorageEngineStatus)
+		systemRoutes.POST("/storage-engine-check", handler.CheckStorageEngine)
 		systemRoutes.GET("/minio/buckets", handler.ListMinioBuckets)
 	}
 }
@@ -537,4 +559,89 @@ func RegisterOrganizationRoutes(r *gin.RouterGroup, orgHandler *handler.Organiza
 	// Shared agents route
 	r.GET("/shared-agents", orgHandler.ListSharedAgents)
 	r.POST("/shared-agents/disabled", orgHandler.SetSharedAgentDisabledByMe)
+}
+
+// serveFrontendStatic registers a middleware that serves the frontend SPA
+// from the ./web directory if it exists. Must be called BEFORE auth middleware
+// so static files are served without authentication.
+func serveFrontendStatic(r *gin.Engine) {
+	webDir := os.Getenv("WEKNORA_WEB_DIR")
+	if webDir == "" {
+		webDir = "./web"
+	}
+	absDir, _ := filepath.Abs(webDir)
+	indexPath := filepath.Join(absDir, "index.html")
+	if _, err := os.Stat(indexPath); err != nil {
+		return
+	}
+
+	logger.Infof(context.Background(), "[Router] Serving frontend static files from %s", absDir)
+
+	fs := http.Dir(absDir)
+	fileServer := http.FileServer(fs)
+
+	r.Use(func(c *gin.Context) {
+		if c.Request.Method != http.MethodGet && c.Request.Method != http.MethodHead {
+			c.Next()
+			return
+		}
+		path := c.Request.URL.Path
+		if strings.HasPrefix(path, "/api/") || strings.HasPrefix(path, "/health") || strings.HasPrefix(path, "/swagger/") {
+			c.Next()
+			return
+		}
+		fullPath := filepath.Join(absDir, path)
+		if info, err := os.Stat(fullPath); err == nil && !info.IsDir() {
+			fileServer.ServeHTTP(c.Writer, c.Request)
+			c.Abort()
+			return
+		}
+		c.File(indexPath)
+		c.Abort()
+	})
+}
+
+// serveLocalFiles serves files from the local storage directory (e.g. /data/files)
+// at the /files/ URL path. Registered before auth middleware so that <img> tags
+// in rendered markdown can load images without authentication tokens.
+func serveLocalFiles(r *gin.Engine) {
+	baseDir := os.Getenv("LOCAL_STORAGE_BASE_DIR")
+	if baseDir == "" {
+		baseDir = "/data/files"
+	}
+	absDir, _ := filepath.Abs(baseDir)
+	if info, err := os.Stat(absDir); err != nil || !info.IsDir() {
+		if err := os.MkdirAll(absDir, 0o755); err != nil {
+			logger.Warnf(context.Background(), "[Router] Cannot create local storage dir %s: %v", absDir, err)
+			return
+		}
+	}
+
+	logger.Infof(context.Background(), "[Router] Serving local storage files from %s at /files/", absDir)
+
+	r.GET("/files/*filepath", func(c *gin.Context) {
+		reqPath := strings.TrimPrefix(c.Param("filepath"), "/")
+		cleanPath := filepath.Clean(reqPath)
+		if cleanPath == "." || strings.HasPrefix(cleanPath, "..") {
+			logger.Warnf(context.Background(), "[Router] Reject invalid /files path: raw=%q clean=%q", c.Param("filepath"), cleanPath)
+			c.Status(http.StatusForbidden)
+			return
+		}
+
+		fullPath := filepath.Join(absDir, cleanPath)
+		if !strings.HasPrefix(fullPath, absDir) {
+			logger.Warnf(context.Background(), "[Router] Reject escaped /files path: raw=%q full=%q base=%q", c.Param("filepath"), fullPath, absDir)
+			c.Status(http.StatusForbidden)
+			return
+		}
+
+		info, err := os.Stat(fullPath)
+		if err != nil || info.IsDir() {
+			logger.Warnf(context.Background(), "[Router] /files not found: raw=%q full=%q err=%v", c.Param("filepath"), fullPath, err)
+			c.Status(http.StatusNotFound)
+			return
+		}
+		logger.Infof(context.Background(), "[Router] /files hit: raw=%q full=%q", c.Param("filepath"), fullPath)
+		c.File(fullPath)
+	})
 }

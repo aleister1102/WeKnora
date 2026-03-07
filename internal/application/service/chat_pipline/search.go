@@ -183,6 +183,9 @@ func (p *PluginSearch) OnEvent(ctx context.Context,
 							return
 						}
 						if len(res) > 0 {
+							for _, r := range res {
+								r.KnowledgeBaseID = t.KnowledgeBaseID
+							}
 							pipelineInfo(ctx, "Search", "expansion_hits", map[string]interface{}{
 								"kb_id": t.KnowledgeBaseID,
 								"query": q,
@@ -338,6 +341,9 @@ func (p *PluginSearch) searchByTargets(
 				directResults, skippedIDs := p.tryDirectChunkLoading(ctx, chatManage.TenantID, t.KnowledgeIDs)
 
 				if len(directResults) > 0 {
+					for _, r := range directResults {
+						r.KnowledgeBaseID = t.KnowledgeBaseID
+					}
 					pipelineInfo(ctx, "Search", "direct_load", map[string]interface{}{
 						"kb_id":        t.KnowledgeBaseID,
 						"loaded_count": len(directResults),
@@ -382,6 +388,9 @@ func (p *PluginSearch) searchByTargets(
 					"error":       err.Error(),
 				})
 				return
+			}
+			for _, r := range res {
+				r.KnowledgeBaseID = t.KnowledgeBaseID
 			}
 			pipelineInfo(ctx, "Search", "kb_result", map[string]interface{}{
 				"kb_id":       t.KnowledgeBaseID,
@@ -494,7 +503,7 @@ func (p *PluginSearch) searchWebIfEnabled(ctx context.Context, chatManage *types
 	if !chatManage.WebSearchEnabled || p.webSearchService == nil || p.tenantService == nil {
 		return nil
 	}
-	tenant := ctx.Value(types.TenantInfoContextKey).(*types.Tenant)
+	tenant, _ := types.TenantInfoFromContext(ctx)
 	if tenant == nil || tenant.WebSearchConfig == nil || tenant.WebSearchConfig.Provider == "" {
 		pipelineWarn(ctx, "Search", "web_config_missing", map[string]interface{}{
 			"tenant_id": chatManage.TenantID,

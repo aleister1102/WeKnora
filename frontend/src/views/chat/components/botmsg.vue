@@ -48,11 +48,13 @@
 <script setup>
 import { onMounted, onBeforeUnmount, watch, computed, ref, reactive, defineProps, nextTick } from 'vue';
 import { marked } from 'marked';
+import mermaid from 'mermaid';
 import docInfo from './docInfo.vue';
 import deepThink from './deepThink.vue';
 import AgentStreamDisplay from './AgentStreamDisplay.vue';
 import picturePreview from '@/components/picture-preview.vue';
 import { sanitizeHTML, safeMarkdownToHTML, createSafeImage, isValidImageURL } from '@/utils/security';
+import { openMermaidFullscreen } from '@/utils/mermaidViewer';
 import { useI18n } from 'vue-i18n';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { useUIStore } from '@/stores/ui';
@@ -62,6 +64,39 @@ marked.use({
     headerIds: false,
     breaks: true,  // 全局启用单个换行支持
 });
+
+// Mermaid 初始化计数器
+let botmsgMermaidCount = 0;
+
+// 初始化 Mermaid
+mermaid.initialize({
+    startOnLoad: false,
+    theme: 'default',
+    securityLevel: 'strict',
+    fontFamily: 'PingFang SC, Microsoft YaHei, sans-serif',
+    flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true,
+        curve: 'basis'
+    },
+    sequence: {
+        useMaxWidth: true,
+        diagramMarginX: 8,
+        diagramMarginY: 8,
+        actorMargin: 50,
+        width: 150,
+        height: 65
+    },
+    gantt: {
+        useMaxWidth: true,
+        leftPadding: 75,
+        gridLineStartPadding: 35,
+        barHeight: 20,
+        barGap: 4,
+        topPadding: 50
+    }
+});
+
 const emit = defineEmits(['scroll-bottom'])
 const { t } = useI18n()
 const uiStore = useUIStore();
@@ -113,6 +148,22 @@ customRenderer.image = function(href, title, text) {
     }
     // 使用安全的图片创建函数
     return createSafeImage(href, text || '', title || '');
+};
+
+// 覆盖代码块渲染方法，支持 Mermaid
+customRenderer.code = function(code, infostring) {
+    const lang = (infostring || '').trim();
+
+    // Mermaid 图表处理
+    if (lang === 'mermaid') {
+        const id = `mermaid-botmsg-${++botmsgMermaidCount}`;
+        return `<div class="mermaid" id="${id}">${code}</div>`;
+    }
+
+    // 普通代码块
+    const displayLang = lang || 'Code';
+    const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<pre><code class="language-${displayLang}">${escapedCode}</code></pre>`;
 };
 
 // 计算属性：将 Markdown 文本转换为 tokens
@@ -247,12 +298,78 @@ const handleMarkdownImageClick = (e) => {
     }
 };
 
+// 渲染 Mermaid 图表的函数
+const renderMermaidDiagrams = async () => {
+    try {
+        if (parentMd.value) {
+            const mermaidElements = parentMd.value.querySelectorAll('.mermaid');
+            console.log('[Mermaid] Found mermaid elements:', mermaidElements?.length);
+            if (mermaidElements && mermaidElements.length > 0) {
+                await mermaid.run({
+                    nodes: mermaidElements
+                });
+                console.log('[Mermaid] Rendering complete');
+                // 渲染完成后绑定点击事件
+                nextTick(() => {
+                    bindMermaidClickEvents();
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Mermaid rendering error:', error);
+    }
+};
+
+// 已渲染的 mermaid 元素 ID 集合
+const renderedMermaidIds = new Set();
+
+// Mermaid 点击处理函数 - 必须在 bindMermaidClickEvents 之前定义
+const handleMermaidClick = (e) => {
+    e.stopPropagation();
+    const target = e.currentTarget;
+    const svg = target.querySelector('svg');
+    if (svg) {
+        openMermaidFullscreen(svg.outerHTML);
+    }
+};
+
+// 为 Mermaid 容器绑定点击全屏事件（绑定在 div 上，不是 SVG 上）
+const bindMermaidClickEvents = () => {
+    if (!parentMd.value) {
+        console.log('[Mermaid] parentMd is null');
+        return;
+    }
+    // 绑定在 .mermaid div 上，而不是 SVG 上
+    const mermaidDivs = parentMd.value.querySelectorAll('.mermaid');
+    console.log('[Mermaid] Found mermaid divs:', mermaidDivs.length);
+    mermaidDivs.forEach((div, index) => {
+        const divEl = div;
+        divEl.style.cursor = 'pointer';
+        // 移除旧的事件监听器（避免重复绑定）
+        divEl.removeEventListener('click', handleMermaidClick);
+        divEl.addEventListener('click', handleMermaidClick);
+        console.log(`[Mermaid] Bound click event to div ${index}`);
+    });
+};
+
+// 监听内容变化并渲染 Mermaid - 只在会话完成后渲染
+watch(() => [props.content, props.session?.content, props.session?.is_completed], () => {
+    // 只在会话完成后渲染 mermaid
+    if (props.session?.is_completed) {
+        nextTick(() => {
+            renderMermaidDiagrams();
+        });
+    }
+}, { immediate: true });
+
 onMounted(async () => {
     // 为 markdown-content 中的图片添加点击事件
     nextTick(() => {
         if (parentMd.value) {
             parentMd.value.addEventListener('click', handleMarkdownImageClick, true);
         }
+        // 初始渲染 Mermaid 图表
+        renderMermaidDiagrams();
     });
 });
 
@@ -387,6 +504,21 @@ onBeforeUnmount(() => {
 
         &:hover {
             transform: scale(1.02);
+        }
+    }
+
+    // Mermaid 图表样式
+    :deep(.mermaid) {
+        margin: 16px 0;
+        padding: 16px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        overflow-x: auto;
+        text-align: center;
+
+        svg {
+            max-width: 100%;
+            height: auto;
         }
     }
 }

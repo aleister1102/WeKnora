@@ -15,25 +15,32 @@
                      :class="['menu_item', item.childrenPath && item.childrenPath == currentpath ? 'menu_item_c_active' : isMenuItemActive(item.path) ? 'menu_item_active' : '']">
                     <div class="menu_item-box">
                         <div class="menu_icon">
-                            <img class="icon" :src="getImgSrc(item.icon == 'zhishiku' ? knowledgeIcon : item.icon == 'agent' ? agentIcon : item.icon == 'organization' ? organizationIcon : item.icon == 'logout' ? logoutIcon : item.icon == 'setting' ? settingIcon : prefixIcon)" alt="">
+                            <img class="icon" :src="getImgSrc(item.icon == 'zhishiku' ? knowledgeIcon : item.icon == 'search' ? searchIcon : item.icon == 'agent' ? agentIcon : item.icon == 'organization' ? organizationIcon : item.icon == 'logout' ? logoutIcon : item.icon == 'setting' ? settingIcon : prefixIcon)" alt="">
                         </div>
                         <span class="menu_title" :title="item.title">{{ item.title }}</span>
                         <span v-if="item.path === 'organizations' && orgStore.totalPendingJoinRequestCount > 0" class="menu-pending-badge" :title="t('organization.settings.pendingJoinRequestsBadge')">{{ orgStore.totalPendingJoinRequestCount }}</span>
-                        <t-icon v-if="item.path === 'creatChat'" name="add" class="menu-create-hint" />
+                        <span v-if="item.path === 'creatChat' && batchMode" class="batch-cancel-hint" @click.stop="exitBatchMode">{{ t('batchManage.cancel') }}</span>
+                        <t-icon v-else-if="item.path === 'creatChat'" name="add" class="menu-create-hint" />
                     </div>
                 </div>
                 <div ref="submenuscrollContainer" @scroll="handleScroll" class="submenu" v-if="item.children">
                     <template v-for="(group, groupIndex) in groupedSessions" :key="groupIndex">
                         <div class="timeline_header">{{ group.label }}</div>
                         <div class="submenu_item_p" v-for="(subitem, subindex) in group.items" :key="subitem.id">
-                            <div :class="['submenu_item', currentSecondpath == subitem.path ? 'submenu_item_active' : '']"
+                            <div :class="['submenu_item', !batchMode && currentSecondpath == subitem.path ? 'submenu_item_active' : '', batchMode && batchSelectedIds.includes(subitem.id) ? 'submenu_item_selected' : '', batchMode ? 'submenu_item_batch' : '']"
                                 @mouseenter="mouseenteBotDownr(subitem.id)" @mouseleave="mouseleaveBotDown"
-                                @click="gotopage(subitem.path)">
+                                @click="batchMode ? toggleBatchSelect(subitem.id) : gotopage(subitem.path)">
+                                <t-checkbox v-if="batchMode"
+                                    class="batch-checkbox"
+                                    :checked="batchSelectedIds.includes(subitem.id)"
+                                    @click.stop
+                                    @change="toggleBatchSelect(subitem.id)"
+                                />
                                 <span class="submenu_title"
-                                    :style="currentSecondpath == subitem.path ? 'margin-left:18px;max-width:160px;' : 'margin-left:18px;max-width:185px;'">
+                                    :style="batchMode ? 'margin-left:4px;max-width:170px;' : (currentSecondpath == subitem.path ? 'margin-left:18px;max-width:160px;' : 'margin-left:18px;max-width:185px;')">
                                     {{ subitem.title }}
                                 </span>
-                                <t-dropdown 
+                                <t-dropdown v-if="!batchMode"
                                     :options="[{ content: t('upload.deleteRecord'), value: 'delete' }, { content: t('menu.batchManage'), value: 'batchManage' }]"
                                     @click="handleSessionMenuClick($event, subitem.originalIndex, subitem)"
                                     placement="bottom-right"
@@ -46,6 +53,27 @@
                         </div>
                     </template>
                 </div>
+                <div v-if="batchMode && item.path === 'creatChat'" class="batch-inline-footer">
+                    <div class="batch-footer-left">
+                        <t-checkbox
+                            :checked="isAllBatchSelected"
+                            :indeterminate="isBatchIndeterminate"
+                            @change="toggleBatchSelectAll"
+                        >
+                            {{ t('batchManage.selectAll') }}
+                        </t-checkbox>
+                    </div>
+                    <t-button
+                        size="small"
+                        theme="danger"
+                        variant="base"
+                        :disabled="batchSelectedIds.length === 0"
+                        :loading="batchDeleting"
+                        @click="handleInlineBatchDelete"
+                    >
+                        {{ t('batchManage.delete') }}{{ batchSelectedIds.length > 0 ? `(${batchDisplayCount})` : '' }}
+                    </t-button>
+                </div>
             </div>
         </div>
         
@@ -55,13 +83,6 @@
             <UserMenu />
         </div>
 
-        <!-- 批量管理对话框 -->
-        <BatchManageDialog
-            v-model:visible="batchManageVisible"
-            :sessions="allSessions"
-            @deleted="handleBatchDeleted"
-        />
-        
     </div>
 </template>
 
@@ -69,17 +90,16 @@
 import { storeToRefs } from 'pinia';
 import { onMounted, watch, computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getSessionsList, delSession } from "@/api/chat/index";
+import { getSessionsList, delSession, batchDelSessions, deleteAllSessions } from "@/api/chat/index";
 import { getKnowledgeBaseById } from '@/api/knowledge-base';
 import { logout as logoutApi } from '@/api/auth';
 import { useMenuStore } from '@/stores/menu';
 import { useAuthStore } from '@/stores/auth';
 import { useOrganizationStore } from '@/stores/organization';
 import { useUIStore } from '@/stores/ui';
-import { MessagePlugin } from "tdesign-vue-next";
+import { MessagePlugin, DialogPlugin } from "tdesign-vue-next";
 import UserMenu from '@/components/UserMenu.vue';
 import TenantSelector from '@/components/TenantSelector.vue';
-import BatchManageDialog from '@/components/BatchManageDialog.vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -103,19 +123,27 @@ const { menuArr } = storeToRefs(usemenuStore);
 let activeSubmenu = ref<string>('');
 
 // 批量管理状态
-const batchManageVisible = ref(false);
+const batchMode = ref(false)
+const batchSelectedIds = ref<string[]>([])
+const batchDeleting = ref(false)
 
-// 所有会话列表（用于批量管理对话框）
-const allSessions = computed(() => {
+const allSessionIds = computed(() => {
     const chatMenu = (menuArr.value as unknown as MenuItem[]).find((item: MenuItem) => item.path === 'creatChat');
-    if (!chatMenu || !chatMenu.children) return [];
-    return chatMenu.children.map((s: any) => ({
-        id: s.id,
-        title: s.title,
-        created_at: s.created_at,
-        updated_at: s.updated_at,
-    }));
-});
+    if (!chatMenu?.children) return [];
+    return (chatMenu.children as any[]).map((s: any) => s.id);
+})
+
+const isAllBatchSelected = computed(() =>
+    allSessionIds.value.length > 0 && batchSelectedIds.value.length === allSessionIds.value.length
+)
+
+const isBatchIndeterminate = computed(() =>
+    batchSelectedIds.value.length > 0 && batchSelectedIds.value.length < allSessionIds.value.length
+)
+
+const batchDisplayCount = computed(() =>
+    isAllBatchSelected.value ? total.value : batchSelectedIds.value.length
+)
 
 // 是否可以访问所有租户
 const canAccessAllTenants = computed(() => authStore.canAccessAllTenants);
@@ -155,6 +183,8 @@ const isMenuItemActive = (itemPath: string): boolean => {
             return currentRoute === 'knowledgeBaseList' || 
                    currentRoute === 'knowledgeBaseDetail' || 
                    currentRoute === 'knowledgeBaseSettings';
+        case 'knowledge-search':
+            return currentRoute === 'knowledgeSearch';
         case 'agents':
             return currentRoute === 'agentList';
         case 'organizations':
@@ -187,13 +217,13 @@ const getIconActiveState = (itemPath: string) => {
 // 分离上下两部分菜单
 const topMenuItems = computed<MenuItem[]>(() => {
     return (menuArr.value as unknown as MenuItem[]).filter((item: MenuItem) => 
-        item.path === 'knowledge-bases' || item.path === 'agents' || item.path === 'organizations' || item.path === 'creatChat'
+        item.path === 'knowledge-bases' || item.path === 'knowledge-search' || item.path === 'agents' || item.path === 'organizations' || item.path === 'creatChat'
     );
 });
 
 const bottomMenuItems = computed<MenuItem[]>(() => {
     return (menuArr.value as unknown as MenuItem[]).filter((item: MenuItem) => {
-        if (item.path === 'knowledge-bases' || item.path === 'agents' || item.path === 'organizations' || item.path === 'creatChat') {
+        if (item.path === 'knowledge-bases' || item.path === 'knowledge-search' || item.path === 'agents' || item.path === 'organizations' || item.path === 'creatChat') {
             return false;
         }
         return true;
@@ -276,11 +306,89 @@ const mouseleaveBotDown = () => {
     activeSubmenu.value = '';
 }
 
+const enterBatchMode = () => {
+    batchMode.value = true
+    batchSelectedIds.value = []
+}
+
+const exitBatchMode = () => {
+    batchMode.value = false
+    batchSelectedIds.value = []
+}
+
+const toggleBatchSelect = (id: string) => {
+    const idx = batchSelectedIds.value.indexOf(id)
+    if (idx > -1) {
+        batchSelectedIds.value.splice(idx, 1)
+    } else {
+        batchSelectedIds.value.push(id)
+    }
+}
+
+const toggleBatchSelectAll = (checked: boolean) => {
+    batchSelectedIds.value = checked ? [...allSessionIds.value] : []
+}
+
+const handleInlineBatchDelete = () => {
+    if (batchSelectedIds.value.length === 0) return
+    const isDeleteAll = isAllBatchSelected.value
+    const displayCount = batchDisplayCount.value
+    const confirmDialog = DialogPlugin.confirm({
+        header: t('batchManage.deleteConfirmTitle'),
+        body: isDeleteAll
+            ? t('batchManage.deleteAllConfirmBody') || t('batchManage.deleteConfirmBody', { count: displayCount })
+            : t('batchManage.deleteConfirmBody', { count: displayCount }),
+        confirmBtn: { content: t('batchManage.delete'), theme: 'danger' as const },
+        cancelBtn: t('batchManage.cancel'),
+        theme: 'warning',
+        onConfirm: async () => {
+            batchDeleting.value = true
+            try {
+                let res: any
+                if (isDeleteAll) {
+                    res = await deleteAllSessions()
+                } else {
+                    res = await batchDelSessions([...batchSelectedIds.value])
+                }
+                if (res && res.success === true) {
+                    const chatMenuItem = (menuArr.value as any[]).find((m: any) => m.path === 'creatChat');
+                    if (isDeleteAll) {
+                        if (chatMenuItem) chatMenuItem.children = [];
+                        total.value = 0;
+                    } else {
+                        const ids = [...batchSelectedIds.value]
+                        if (chatMenuItem && chatMenuItem.children) {
+                            for (const id of ids) {
+                                const idx = chatMenuItem.children.findIndex((s: any) => s.id === id);
+                                if (idx !== -1) chatMenuItem.children.splice(idx, 1);
+                            }
+                        }
+                        total.value = Math.max(0, total.value - ids.length);
+                    }
+                    const currentChatId = route.params.chatid as string;
+                    if (currentChatId && (isDeleteAll || batchSelectedIds.value.includes(currentChatId))) {
+                        router.push('/platform/creatChat');
+                    }
+                    batchSelectedIds.value = []
+                    MessagePlugin.success(t('batchManage.deleteSuccess'))
+                    exitBatchMode()
+                } else {
+                    MessagePlugin.error(t('batchManage.deleteFailed'))
+                }
+            } catch {
+                MessagePlugin.error(t('batchManage.deleteFailed'))
+            }
+            batchDeleting.value = false
+            confirmDialog.destroy()
+        },
+    })
+}
+
 const handleSessionMenuClick = (data: { value: string }, index: number, item: any) => {
     if (data?.value === 'delete') {
         delCard(index, item);
     } else if (data?.value === 'batchManage') {
-        batchManageVisible.value = true;
+        enterBatchMode()
     }
 };
 
@@ -314,22 +422,6 @@ const delCard = (index: number, item: any) => {
     })
 }
 
-const handleBatchDeleted = (ids: string[]) => {
-    const chatMenuItem = (menuArr.value as any[]).find((m: any) => m.path === 'creatChat');
-    if (chatMenuItem && chatMenuItem.children) {
-        const children = chatMenuItem.children;
-        for (const id of ids) {
-            const idx = children.findIndex((s: any) => s.id === id);
-            if (idx !== -1) children.splice(idx, 1);
-        }
-    }
-    total.value = Math.max(0, total.value - ids.length);
-    // 如果当前会话被删除，跳转到创建页
-    const currentChatId = route.params.chatid as string;
-    if (currentChatId && ids.includes(currentChatId)) {
-        router.push('/platform/creatChat');
-    }
-}
 
 const debounce = (fn: (...args: any[]) => void, delay: number) => {
     let timer: ReturnType<typeof setTimeout>
@@ -393,7 +485,7 @@ onMounted(async () => {
     if (route.params.chatid) {
         currentSecondpath.value = `chat/${route.params.chatid}`;
     }
-    
+
     // 初始化知识库信息
     const kbId = (route.params as any)?.kbId as string
     if (kbId && isInKnowledgeBase.value) {
@@ -461,11 +553,12 @@ watch([() => route.name, () => route.params], (newvalue, oldvalue) => {
     }
 });
 let knowledgeIcon = ref('zhishiku-green.svg');
+let searchIcon = ref('search.svg');
 let prefixIcon = ref('prefixIcon.svg');
 let logoutIcon = ref('logout.svg');
-let settingIcon = ref('setting.svg'); // 设置图标
-let agentIcon = ref('agent.svg'); // 智能体图标
-let organizationIcon = ref('organization.svg'); // 组织图标
+let settingIcon = ref('setting.svg');
+let agentIcon = ref('agent.svg');
+let organizationIcon = ref('organization.svg');
 let pathPrefix = ref(route.name)
   const getIcon = (path: string) => {
       // 根据当前路由状态更新所有图标
@@ -474,9 +567,13 @@ let pathPrefix = ref(route.name)
       const settingsActiveState = getIconActiveState('settings');
       const agentsActiveState = route.name === 'agentList';
       const organizationsActiveState = route.name === 'organizationList';
+      const knowledgeSearchActiveState = route.name === 'knowledgeSearch';
       
       // 知识库图标：只在知识库页面显示绿色
       knowledgeIcon.value = kbActiveState.isKbActive ? 'zhishiku-green.svg' : 'zhishiku.svg';
+      
+      // 知识搜索图标：只在知识搜索页面显示绿色
+      searchIcon.value = knowledgeSearchActiveState ? 'search-green.svg' : 'search.svg';
       
       // 智能体图标：只在智能体页面显示绿色
       agentIcon.value = agentsActiveState ? 'agent-green.svg' : 'agent.svg';
@@ -505,8 +602,9 @@ const handleMenuClick = async (path: string) => {
         } else {
             router.push('/platform/knowledge-bases')
         }
+    } else if (path === 'knowledge-search') {
+        router.push('/platform/knowledge-search')
     } else if (path === 'agents') {
-        // 智能体菜单项：跳转到智能体列表
         router.push('/platform/agents')
     } else if (path === 'organizations') {
         // 组织菜单项：跳转到组织列表
@@ -712,6 +810,8 @@ const mouseleaveMenu = (path: string) => {
         padding: 13px 8px 13px 16px;
         box-sizing: border-box;
         margin-bottom: 4px;
+        border-radius: 4px;
+        transition: background-color 0.2s ease;
 
         .menu_item-box {
             display: flex;
@@ -720,12 +820,11 @@ const mouseleaveMenu = (path: string) => {
 
         &:hover {
             border-radius: 4px;
-            background: #30323605;
-            color: #00000099;
+            background: rgba(0, 0, 0, 0.04);
 
             .menu_icon,
             .menu_title {
-                color: #00000099;
+                color: #000000b3;
             }
         }
     }
@@ -825,12 +924,12 @@ const mouseleaveMenu = (path: string) => {
         }
 
         &:hover {
-            background: #30323605;
-            color: #00000099;
+            background: rgba(0, 0, 0, 0.04);
+            color: #000000b3;
             border-radius: 3px;
 
             .menu-more {
-                color: #00000099;
+                color: #000000b3;
             }
 
             .menu-more-wrap {
@@ -860,6 +959,53 @@ const mouseleaveMenu = (path: string) => {
         .submenu_title {
             max-width: 160px !important;
         }
+    }
+
+    .submenu_item_batch {
+        padding-left: 10px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .submenu_item_selected {
+        background: #07c05f0d !important;
+        border-radius: 3px;
+    }
+
+    .batch-checkbox {
+        flex-shrink: 0;
+    }
+}
+
+.batch-cancel-hint {
+    margin-left: auto;
+    margin-right: 8px;
+    font-size: 13px;
+    color: #00000066;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+    font-weight: 400;
+
+    &:hover {
+        color: #000000b3;
+    }
+}
+
+.batch-inline-footer {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    border-top: 1px solid #e7ebf0;
+    background: #fff;
+
+    .batch-footer-left {
+        display: flex;
+        align-items: center;
+        font-size: 13px;
+        color: #00000099;
     }
 }
 

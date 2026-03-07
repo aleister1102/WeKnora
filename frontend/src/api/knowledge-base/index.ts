@@ -19,7 +19,7 @@ export function createKnowledgeBase(data: {
     enabled: boolean;
     model_id?: string;
   };
-  cos_config?: any;
+  storage_config?: any;
   extract_config?: any;
   faq_config?: { index_mode: string; question_index_mode?: string };
 }) {
@@ -104,6 +104,10 @@ export function delKnowledgeDetails(id: string) {
 
 export function downKnowledgeDetails(id: string) {
   return getDown(`/api/v1/knowledge/${id}/download`);
+}
+
+export function previewKnowledgeFile(id: string) {
+  return getDown(`/api/v1/knowledge/${id}/preview`);
 }
 
 /** @param idsQueryString - query string with ids (e.g. ids=xxx&ids=yyy) */
@@ -294,4 +298,12 @@ export function searchKnowledge(
   }
   if (options?.agent_id) query.set('agent_id', options.agent_id);
   return get(`/api/v1/knowledge/search?${query.toString()}`);
+}
+
+export function knowledgeSemanticSearch(data: {
+  query: string;
+  knowledge_base_ids?: string[];
+  knowledge_ids?: string[];
+}) {
+  return post('/api/v1/knowledge-search', data);
 }

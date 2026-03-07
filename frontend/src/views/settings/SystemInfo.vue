@@ -31,6 +31,13 @@
         <div class="setting-control">
           <span class="info-value">
               {{ systemInfo?.version || $t('system.unknown') }}
+              <t-tag
+                v-if="systemInfo?.edition"
+                theme="default"
+                variant="light"
+                size="small"
+                style="margin-left: 8px;"
+              >{{ systemInfo.edition || 'Standard' }}</t-tag>
               <span v-if="systemInfo?.commit_id" class="commit-info">
                 ({{ systemInfo.commit_id }})
               </span>
@@ -57,6 +64,17 @@
         </div>
         <div class="setting-control">
           <span class="info-value">{{ systemInfo.go_version }}</span>
+        </div>
+      </div>
+
+      <!-- DB Version -->
+      <div v-if="systemInfo?.db_version" class="setting-row">
+        <div class="setting-info">
+          <label>{{ $t('system.dbVersionLabel') }}</label>
+          <p class="desc">{{ $t('system.dbVersionDescription') }}</p>
+        </div>
+        <div class="setting-control">
+          <span class="info-value">{{ systemInfo.db_version }}</span>
         </div>
       </div>
 

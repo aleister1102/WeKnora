@@ -5,6 +5,7 @@ import { onBeforeRouteUpdate } from 'vue-router';
 import { MessagePlugin } from "tdesign-vue-next";
 import { useSettingsStore } from '@/stores/settings';
 import { useUIStore } from '@/stores/ui';
+import { useMenuStore } from '@/stores/menu';
 import { listKnowledgeBases, searchKnowledge, batchQueryKnowledge } from '@/api/knowledge-base';
 import { stopSession } from '@/api/chat';
 import { useOrganizationStore } from '@/stores/organization';
@@ -23,6 +24,7 @@ const router = useRouter();
 const settingsStore = useSettingsStore();
 const uiStore = useUIStore();
 const orgStore = useOrganizationStore();
+const menuStore = useMenuStore();
 const { t } = useI18n();
 
 let query = ref("");
@@ -96,6 +98,9 @@ const agentKBSelectionMode = computed(() => {
   if (!hasAgentConfig.value) return null; // null 表示不受智能体控制
   return currentAgentConfig.value?.kb_selection_mode || 'all';
 });
+
+// 共享智能体下的知识库列表（来自 listKnowledgeBases(agent_id)），用于已选知识库展示与 org 角标
+const sharedAgentKbList = ref<Array<{ id: string; name: string; type?: string; knowledge_count?: number; chunk_count?: number }>>([]);
 
 // 当智能体改变时，模型、网络搜索、可@知识库列表均跟随新智能体配置
 // 知识库：用新智能体配置的列表替换当前选中，使已选与可@列表一致（含共享智能体）
@@ -204,9 +209,6 @@ const sharedAgentOrgName = computed(() => {
   );
   return shared?.org_name || shared?.shared_by_username || '';
 });
-
-// 共享智能体下的知识库列表（来自 listKnowledgeBases(agent_id)），用于已选知识库展示与 org 角标
-const sharedAgentKbList = ref<Array<{ id: string; name: string; type?: string; knowledge_count?: number; chunk_count?: number }>>([]);
 
 const props = defineProps({
   isReplying: {
@@ -1214,6 +1216,15 @@ onMounted(() => {
   const kbId = (route.params as any)?.kbId as string;
   if (kbId && !selectedKbIds.value.includes(kbId)) {
     settingsStore.addKnowledgeBase(kbId);
+  }
+
+  const prefill = menuStore.consumePrefillQuery();
+  if (prefill) {
+    query.value = prefill;
+    nextTick(() => {
+      const textarea = getTextareaEl();
+      if (textarea) textarea.focus();
+    });
   }
 
   // 监听点击外部关闭下拉菜单

@@ -18,34 +18,51 @@
               </div>
               <div class="settings-nav">
                 <template v-for="(item, index) in navItems" :key="index">
-                  <div :class="['nav-item', {
-                    'active': currentSection === item.key,
-                    'has-submenu': item.children && item.children.length > 0,
-                    'expanded': expandedMenus.includes(item.key)
-                  }]" @click="handleNavClick(item)">
+                  <div 
+                    :class="['nav-item', { 
+                      'active': currentSection === item.key,
+                      'has-submenu': item.children && item.children.length > 0,
+                      'expanded': expandedMenus.includes(item.key)
+                    }]"
+                    @click="handleNavClick(item)"
+                  >
                     <!-- 网络搜索使用自定义 SVG 图标 -->
-                    <svg v-if="item.key === 'web_search'" width="18" height="18" viewBox="0 0 18 18" fill="none"
-                      xmlns="http://www.w3.org/2000/svg" class="nav-icon">
-                      <circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.2" fill="none" />
-                      <path d="M 9 2 A 3.5 7 0 0 0 9 16" stroke="currentColor" stroke-width="1.2" fill="none" />
-                      <path d="M 9 2 A 3.5 7 0 0 1 9 16" stroke="currentColor" stroke-width="1.2" fill="none" />
-                      <line x1="2.94" y1="5.5" x2="15.06" y2="5.5" stroke="currentColor" stroke-width="1.2"
-                        stroke-linecap="round" />
-                      <line x1="2.94" y1="12.5" x2="15.06" y2="12.5" stroke="currentColor" stroke-width="1.2"
-                        stroke-linecap="round" />
+                    <svg 
+                      v-if="item.key === 'websearch'"
+                      width="18" 
+                      height="18" 
+                      viewBox="0 0 18 18" 
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="nav-icon"
+                    >
+                      <circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.2" fill="none"/>
+                      <path d="M 9 2 A 3.5 7 0 0 0 9 16" stroke="currentColor" stroke-width="1.2" fill="none"/>
+                      <path d="M 9 2 A 3.5 7 0 0 1 9 16" stroke="currentColor" stroke-width="1.2" fill="none"/>
+                      <line x1="2.94" y1="5.5" x2="15.06" y2="5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                      <line x1="2.94" y1="12.5" x2="15.06" y2="12.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                     </svg>
                     <t-icon v-else :name="item.icon" class="nav-icon" />
                     <span class="nav-label">{{ item.label }}</span>
-                    <t-icon v-if="item.children && item.children.length > 0"
-                      :name="expandedMenus.includes(item.key) ? 'chevron-down' : 'chevron-right'" class="expand-icon" />
+                    <t-icon 
+                      v-if="item.children && item.children.length > 0"
+                      :name="expandedMenus.includes(item.key) ? 'chevron-down' : 'chevron-right'"
+                      class="expand-icon"
+                    />
                   </div>
-
+                  
                   <!-- 子菜单 -->
                   <Transition name="submenu">
-                    <div v-if="item.children && expandedMenus.includes(item.key)" class="submenu">
-                      <div v-for="(child, childIndex) in item.children" :key="childIndex"
+                    <div 
+                      v-if="item.children && expandedMenus.includes(item.key)" 
+                      class="submenu"
+                    >
+                      <div
+                        v-for="(child, childIndex) in item.children"
+                        :key="childIndex"
                         :class="['submenu-item', { 'active': currentSubSection === child.key }]"
-                        @click.stop="handleSubMenuClick(item.key, child.key)">
+                        @click.stop="handleSubMenuClick(item.key, child.key)"
+                      >
                         <span class="submenu-label">{{ child.label }}</span>
                       </div>
                     </div>
@@ -73,8 +90,18 @@
                 </div>
 
                 <!-- 网络搜索配置 -->
-                <div v-if="currentSection === 'web_search'" class="section">
+                <div v-if="currentSection === 'websearch'" class="section">
                   <WebSearchSettings />
+                </div>
+
+                <!-- 解析引擎 -->
+                <div v-if="currentSection === 'parser'" class="section">
+                  <ParserEngineSettings />
+                </div>
+
+                <!-- 存储引擎 -->
+                <div v-if="currentSection === 'storage'" class="section">
+                  <StorageEngineSettings />
                 </div>
 
                 <!-- 系统信息 -->
@@ -118,6 +145,8 @@ import ModelSettings from './ModelSettings.vue'
 import OllamaSettings from './OllamaSettings.vue'
 import McpSettings from './McpSettings.vue'
 import WebSearchSettings from './WebSearchSettings.vue'
+import ParserEngineSettings from './ParserEngineSettings.vue'
+import StorageEngineSettings from './StorageEngineSettings.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -127,6 +156,7 @@ const { t } = useI18n()
 const currentSection = ref<string>('general')
 const currentSubSection = ref<string>('')
 const expandedMenus = ref<string[]>([])
+const normalizeSectionKey = (section?: string) => section === 'web_search' ? 'websearch' : section
 
 const navItems = computed(() => [
   { key: 'general', icon: 'setting', label: t('general.title') },
@@ -142,7 +172,30 @@ const navItems = computed(() => [
     ]
   },
   { key: 'ollama', icon: 'server', label: 'Ollama' },
-  { key: 'web_search', icon: 'search', label: t('settings.webSearchConfig') },
+  { key: 'websearch', icon: 'search', label: t('settings.webSearchConfig')  },
+  {
+    key: 'parser',
+    icon: 'file-search',
+    label: '解析引擎',
+    children: [
+      { key: 'builtin', label: 'Builtin (DocReader)' },
+      { key: 'simple', label: 'Simple' },
+      { key: 'markitdown', label: 'Markitdown' },
+      { key: 'mineru', label: 'MinerU' },
+      { key: 'mineru_cloud', label: 'MinerU Cloud' },
+    ]
+  },
+  {
+    key: 'storage',
+    icon: 'cloud',
+    label: t('settings.storageEngine'),
+    children: [
+      { key: 'local', label: 'Local' },
+      { key: 'minio', label: 'MinIO' },
+      { key: 'cos', label: '腾讯云 COS' },
+      { key: 'tos', label: '火山引擎 TOS' },
+    ]
+  },
   { key: 'mcp', icon: 'tools', label: t('settings.mcpService') },
   { key: 'system', icon: 'info-circle', label: t('settings.systemSettings') },
   { key: 'tenant', icon: 'user-circle', label: t('settings.tenantInfo') },
@@ -199,11 +252,12 @@ const handleClose = () => {
 // 监听初始导航设置
 watch(() => uiStore.settingsInitialSection, (section) => {
   if (section && visible.value) {
-    currentSection.value = section
-    const navItem = (navItems.value as any[]).find((item) => item.key === section)
+    const normalizedSection = normalizeSectionKey(section) || 'general'
+    currentSection.value = normalizedSection
+    const navItem = (navItems.value as any[]).find((item) => item.key === normalizedSection)
     if (navItem && navItem.children && navItem.children.length > 0) {
-      if (!expandedMenus.value.includes(section)) {
-        expandedMenus.value.push(section)
+      if (!expandedMenus.value.includes(normalizedSection)) {
+        expandedMenus.value.push(normalizedSection)
       }
       currentSubSection.value = uiStore.settingsInitialSubSection || navItem.children[0].key
       if (uiStore.settingsInitialSubSection) {
@@ -231,12 +285,13 @@ const handleEscape = (e: KeyboardEvent) => {
 const handleSettingsNav = (e: CustomEvent) => {
   const { section, subsection } = e.detail
   if (section) {
-    currentSection.value = section
+    const normalizedSection = normalizeSectionKey(section) || 'general'
+    currentSection.value = normalizedSection
     // 如果有子菜单，自动展开
-    const navItem = (navItems.value as any[]).find((item: any) => item.key === section)
+    const navItem = (navItems.value as any[]).find((item: any) => item.key === normalizedSection)
     if (navItem && navItem.children && navItem.children.length > 0) {
-      if (!expandedMenus.value.includes(section)) {
-        expandedMenus.value.push(section)
+      if (!expandedMenus.value.includes(normalizedSection)) {
+        expandedMenus.value.push(normalizedSection)
       }
       // 如果有 subsection，选中对应的子菜单项
       currentSubSection.value = subsection || navItem.children[0].key
@@ -526,4 +581,3 @@ onUnmounted(() => {
   background: #b0b0b0;
 }
 </style>
-
